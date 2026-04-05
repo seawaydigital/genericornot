@@ -109,13 +109,13 @@ npx prisma studio    # Visual DB browser
 - [x] Task 5: Verdict computation logic (20 tests)
 - [x] Task 6: Seed data (51 comparisons across 8 categories)
 
-### Phase 2: Core API (Tasks 7-12)
-- [ ] Task 7: Comparisons API — Read
-- [ ] Task 8: Comparisons API — Create (Submit)
-- [ ] Task 9: Votes API
-- [ ] Task 10: Evidence API
-- [ ] Task 11: Search API (PostgreSQL full-text)
-- [ ] Task 12: Admin API
+### Phase 2: Core API (Tasks 7-12) -- COMPLETE
+- [x] Task 7: Comparisons API — Read
+- [x] Task 8: Comparisons API — Create (Submit)
+- [x] Task 9: Votes API
+- [x] Task 10: Evidence API
+- [x] Task 11: Search API (PostgreSQL full-text)
+- [x] Task 12: Admin API
 
 ### Phase 3: Pages & Components (Tasks 13-23)
 - [ ] Task 13: Layout, Navbar, shared UI
