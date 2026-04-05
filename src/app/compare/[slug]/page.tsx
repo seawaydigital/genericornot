@@ -10,6 +10,7 @@ import { QuickFacts } from "@/components/comparison/QuickFacts";
 import { EvidenceList } from "@/components/comparison/EvidenceList";
 import { VoteButtons } from "@/components/comparison/VoteButtons";
 import { VoteBreakdown } from "@/components/comparison/VoteBreakdown";
+import { EvidenceForm } from "@/components/comparison/EvidenceForm";
 
 export const revalidate = 60;
 
@@ -186,6 +187,11 @@ export default async function ComparisonPage({ params }: PageProps) {
         {/* Evidence list */}
         <section>
           <EvidenceList evidence={evidence} />
+        </section>
+
+        {/* Evidence submission form */}
+        <section>
+          <EvidenceForm comparisonId={comparison.id} />
         </section>
       </div>
     </div>
