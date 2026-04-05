@@ -39,17 +39,15 @@ People frequently discover (via YouTube videos, Reddit posts, factory workers' k
 - `genericStore` — string (e.g., "Costco")
 - `genericPrice` — decimal (optional)
 - `genericImageUrl` — string (optional)
-- `genericUpc` — string (optional)
 - `nameBrandProductName` — string
 - `nameBrand` — string (e.g., "California Olive Ranch")
 - `nameBrandPrice` — decimal (optional)
 - `nameBrandImageUrl` — string (optional)
-- `nameBrandUpc` — string (optional)
 - `categoryId` — foreign key to Category
 - `verdict` — enum: SAME_QUALITY | CLOSE_ENOUGH | NOT_WORTH_IT | MIXED | PENDING
 - `confidenceScore` — integer (0-100, computed from votes)
 - `totalVotes` — integer
-- `status` — enum: PENDING | APPROVED | FLAGGED
+- `status` — enum: PENDING | APPROVED | REJECTED
 - `submittedById` — foreign key to User
 - `createdAt`, `updatedAt` — timestamps
 
@@ -70,26 +68,32 @@ People frequently discover (via YouTube videos, Reddit posts, factory workers' k
 - `content` — text (description/explanation)
 - `url` — string (optional, for video links etc.)
 - `imageUrl` — string (optional, for uploaded photos)
-- `isVerified` — boolean (set by moderators)
-- `upvotes` — integer
 - `createdAt` — timestamp
+
+*Note: `isVerified` and `upvotes` deferred to v2. In v1, evidence is displayed in chronological order.*
 
 ### User
 - `id` — UUID
+- `username` — string (unique, auto-generated from name on first sign-in, e.g., "john-smith-42"; user can change once)
 - `email` — string (unique)
 - `name` — string
 - `image` — string (avatar URL from OAuth)
-- `reputation` — integer (default 0, computed from contributions)
-- `role` — enum: USER | MODERATOR | ADMIN
+- `role` — enum: USER | ADMIN
 - `createdAt` — timestamp
+
+*Note: `reputation` field and MODERATOR role deferred to v2.*
 
 ### Category
 - `id` — UUID
 - `name` — string
 - `slug` — string (URL-friendly)
 - `icon` — string (emoji)
-- `parentId` — self-referencing foreign key (nullable, for hierarchy)
 - `comparisonCount` — integer (denormalized for display)
+
+*Note: Flat category list for v1. Hierarchical categories (parentId) deferred to v2.*
+
+### Slug Generation
+Slugs are auto-generated from product names on creation: `slugify(genericProductName + "-vs-" + nameBrandProductName)`. If a slug collision occurs, append a numeric suffix (e.g., `-2`). Category slugs are set manually in seed data.
 
 ## Page Structure
 
@@ -113,7 +117,7 @@ The core experience. Sections from top to bottom:
 3. **Quick facts** — structured badges: same manufacturer?, ingredients match?, taste/quality comparison. Verified vs community-reported distinction.
 4. **Vote section** — three buttons (Same Quality / Close Enough / Not Worth It), sign-in prompt for anonymous users
 5. **Vote breakdown bar** — horizontal stacked bar showing vote distribution
-6. **Evidence section** — expandable list of user-contributed evidence sorted by type and upvotes. Each entry shows type badge, verified status, contributor username, timestamp, and content.
+6. **Evidence section** — expandable list of user-contributed evidence sorted by type and date. Each entry shows type badge, contributor username, timestamp, and content.
 7. **Add evidence CTA** — form to submit new evidence (requires auth)
 
 ### Search Results (`/search?q=`)
@@ -125,38 +129,44 @@ The core experience. Sections from top to bottom:
 - Requires authentication
 - Form fields: generic product details, name brand details, category selection, initial evidence (optional)
 - Goes to PENDING status for admin review
-- User gets notification when approved
+- Submission status visible on user's profile page (pending/approved/rejected)
 
 ### User Profile (`/user/[username]`)
-- Public profile showing contributions, votes cast, reputation score
+- Public profile showing contributions and submission status (pending/approved/rejected)
 - List of comparisons the user has submitted or contributed evidence to
 
+*Note: Reputation score display deferred to v2.*
+
 ### Admin Dashboard (`/admin`)
-- Accessible to ADMIN and MODERATOR roles
-- Pending submission review queue (approve/reject)
-- Evidence verification (mark claims as verified)
-- User management (assign moderator role)
-- Flagged content review
+- Accessible to ADMIN role only (v1)
+- Pending submission review queue (approve/reject with optional rejection reason)
+- Rejected submissions are kept in the database with status REJECTED; submitter sees status on their profile and can resubmit as a new comparison
+
+*Note: Evidence verification, moderator roles, and flagging system deferred to v2.*
 
 ## Verdict Computation
 
-The verdict is computed from votes with evidence weighting:
+The verdict is computed from simple vote majority (v1 — no evidence weighting):
 - Each vote = 1 point
-- Votes accompanied by evidence = 1.5 points (50% bonus)
-- Verdict thresholds:
-  - **SAME_QUALITY**: >50% weighted votes are "Same Quality"
-  - **CLOSE_ENOUGH**: >50% weighted votes are "Close Enough"
-  - **NOT_WORTH_IT**: >50% weighted votes are "Not Worth It"
-  - **MIXED**: no category exceeds 50%
+- Verdict thresholds (MIXED and PENDING are computed states, never directly voteable):
   - **PENDING**: fewer than 5 total votes
-- Confidence score = (total weighted votes / 100) capped at 100, adjusted by vote concentration (higher if votes agree)
+  - **SAME_QUALITY**: plurality of votes are "Same Quality" (and > 40%)
+  - **CLOSE_ENOUGH**: plurality of votes are "Close Enough" (and > 40%)
+  - **NOT_WORTH_IT**: plurality of votes are "Not Worth It" (and > 40%)
+  - **MIXED**: no category exceeds 40%
+- Confidence score formula: `min(100, totalVotes * 2) * (topVotePercent / 100)`
+  - Example: 30 votes, 70% agree → `min(100, 60) * 0.7 = 42`
+  - Example: 200 votes, 90% agree → `min(100, 400) * 0.9 = 90`
+  - This rewards both volume (more votes) and agreement (consensus)
+
+*Note: Evidence-weighted voting deferred to v2.*
 
 ## Authentication Flow
 
 1. Anonymous users can browse all pages and search freely
 2. Sign-in via Google OAuth (NextAuth.js)
 3. After sign-in, users can: vote on comparisons, submit evidence, submit new comparisons
-4. One vote per user per comparison (can change vote)
+4. One vote per user per comparison. Users can change their vote — the old vote value is replaced (not accumulated) and the verdict is recomputed.
 5. Session-based auth with JWT tokens
 
 ## Search Implementation
@@ -175,6 +185,13 @@ v1 uses PostgreSQL full-text search:
 - **Search**: Always dynamic (no caching).
 - **API routes**: Cache-Control headers for GET endpoints.
 
+## Price & Savings Display
+
+- Savings percentage is computed on the fly: `((nameBrandPrice - genericPrice) / nameBrandPrice * 100)`
+- If either price is missing: hide the savings badge, show "Price not available" in that product's price area
+- If both prices are missing: hide the entire savings section from the verdict banner
+- Prices are user-submitted and approximate — display a disclaimer: "Prices are community-reported and may vary by location"
+
 ## Image Handling
 
 - Product images uploaded via comparison submission form
@@ -183,16 +200,20 @@ v1 uses PostgreSQL full-text search:
 - Served through Next.js Image component for automatic optimization (WebP, responsive sizes)
 - Max upload size: 5MB per image
 - Accepted formats: JPEG, PNG, WebP
+- If no image is uploaded: display a category-appropriate placeholder icon
+- If R2 upload fails: show an error toast, let the user retry, but allow form submission without an image
 
 ## Security & Abuse Prevention
 
-- Rate limiting: 10 votes/min, 5 submissions/hour per authenticated user
+- Rate limiting: 10 votes/min, 5 submissions/hour per authenticated user. Returns HTTP 429 with a "Too many requests, please try again later" message.
 - One vote per user per comparison (database unique constraint)
 - CSRF protection via NextAuth.js
 - Input sanitization on all user-submitted content
 - Image upload validation (file type, size)
 - Admin moderation queue for all new submissions
-- Flagging system for inappropriate content
+- Duplicate detection: on submission, search for existing comparisons with similar product names and warn the submitter. Admin can merge or reject duplicates during review.
+
+*Note: Community flagging system deferred to v2. In v1, inappropriate content is handled by admin through the dashboard.*
 
 ## Mobile Responsiveness
 
