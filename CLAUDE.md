@@ -117,18 +117,18 @@ npx prisma studio    # Visual DB browser
 - [x] Task 11: Search API (PostgreSQL full-text)
 - [x] Task 12: Admin API
 
-### Phase 3: Pages & Components (Tasks 13-23)
-- [ ] Task 13: Layout, Navbar, shared UI
-- [ ] Task 14: VerdictBadge + ComparisonCard
-- [ ] Task 15: Homepage
-- [ ] Task 16: Comparison page — read-only display
-- [ ] Task 17: Comparison page — voting UI
-- [ ] Task 18: Comparison page — evidence form
-- [ ] Task 19: Category page
-- [ ] Task 20: Search results page
-- [ ] Task 21: Submit comparison page
-- [ ] Task 22: User profile page
-- [ ] Task 23: Admin dashboard
+### Phase 3: Pages & Components (Tasks 13-23) -- COMPLETE
+- [x] Task 13: Layout, Navbar, shared UI
+- [x] Task 14: VerdictBadge + ComparisonCard
+- [x] Task 15: Homepage
+- [x] Task 16: Comparison page — read-only display
+- [x] Task 17: Comparison page — voting UI
+- [x] Task 18: Comparison page — evidence form
+- [x] Task 19: Category page
+- [x] Task 20: Search results page
+- [x] Task 21: Submit comparison page
+- [x] Task 22: User profile page
+- [x] Task 23: Admin dashboard
 
 ### Phase 4: Polish (Tasks 24-27)
 - [ ] Task 24: SEO (meta tags, sitemap, JSON-LD)
