@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { computeSavings } from "@/lib/verdict";
+import { getComparisonMetadata, getComparisonJsonLd } from "@/lib/seo";
 import { VerdictBadge } from "@/components/comparison/VerdictBadge";
 import { ProductSideBySide } from "@/components/comparison/ProductSideBySide";
 import { QuickFacts } from "@/components/comparison/QuickFacts";
@@ -47,10 +48,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Comparison Not Found — GenericOrNot" };
   }
 
-  return {
-    title: `${comparison.genericProductName} vs ${comparison.nameBrandProductName} — GenericOrNot`,
-    description: `Is ${comparison.genericBrand} ${comparison.genericProductName} the same quality as ${comparison.nameBrand} ${comparison.nameBrandProductName}? See what the community says.`,
-  };
+  return getComparisonMetadata({
+    ...comparison,
+    genericPrice: comparison.genericPrice ? Number(comparison.genericPrice) : null,
+    nameBrandPrice: comparison.nameBrandPrice ? Number(comparison.nameBrandPrice) : null,
+  });
 }
 
 export default async function ComparisonPage({ params }: PageProps) {
@@ -99,8 +101,18 @@ export default async function ComparisonPage({ params }: PageProps) {
     user: { username: e.user.username },
   }));
 
+  const jsonLd = getComparisonJsonLd({
+    ...comparison,
+    genericPrice: genericPrice,
+    nameBrandPrice: nameBrandPrice,
+  });
+
   return (
     <div className="min-h-screen bg-gray-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto max-w-3xl px-4 py-10 space-y-8">
         {/* Verdict banner */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
