@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { computeVerdict } from "@/lib/verdict";
+import { voteLimiter } from "@/lib/rate-limit";
 
 const VALID_VOTE_VALUES = ["SAME_QUALITY", "CLOSE_ENOUGH", "NOT_WORTH_IT"] as const;
 type VoteValue = (typeof VALID_VOTE_VALUES)[number];
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = voteLimiter.check(session.user.id);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Too many requests, please try again later" },
+      { status: 429 }
+    );
   }
 
   let data: Record<string, unknown>;

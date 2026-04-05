@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { evidenceLimiter } from "@/lib/rate-limit";
 
 const VALID_EVIDENCE_TYPES = [
   "MANUFACTURER_INFO",
@@ -17,6 +18,14 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = evidenceLimiter.check(session.user.id);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Too many requests, please try again later" },
+      { status: 429 }
+    );
   }
 
   let data: Record<string, unknown>;

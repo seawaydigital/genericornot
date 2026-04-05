@@ -6,6 +6,16 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  authOptions: {},
+}));
+
+vi.mock("@/lib/rate-limit", () => ({
+  submissionLimiter: { check: vi.fn(() => ({ success: true, remaining: 4, resetAt: new Date() })) },
+  voteLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
+  evidenceLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
+}));
+
 import { getServerSession } from "next-auth";
 const mockGetServerSession = vi.mocked(getServerSession);
 

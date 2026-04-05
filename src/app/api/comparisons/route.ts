@@ -4,6 +4,7 @@ import { Verdict } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateUniqueSlug } from "@/lib/slug";
+import { submissionLimiter } from "@/lib/rate-limit";
 
 const VALID_SORTS = ["totalVotes", "createdAt", "confidenceScore"] as const;
 type SortField = (typeof VALID_SORTS)[number];
@@ -68,6 +69,14 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = submissionLimiter.check(session.user.id);
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Too many requests, please try again later" },
+      { status: 429 }
+    );
   }
 
   let data: Record<string, unknown>;
