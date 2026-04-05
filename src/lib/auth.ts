@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { AdapterUser } from "next-auth/adapters";
 import { prisma } from "@/lib/db";
 
 function generateUsername(name: string): string {
@@ -17,17 +18,17 @@ const baseAdapter = PrismaAdapter(prisma);
 export const authOptions: NextAuthOptions = {
   adapter: {
     ...baseAdapter,
-    createUser: async (data) => {
+    createUser: async (data: Omit<AdapterUser, "id">) => {
       const username = generateUsername(data.name ?? "user");
-      return prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           email: data.email,
           name: data.name ?? "",
           image: data.image,
-          emailVerified: data.emailVerified,
           username,
         },
       });
+      return { ...user, emailVerified: data.emailVerified ?? null } as AdapterUser;
     },
   },
   providers: [

@@ -128,7 +128,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   return (
     <div className="min-h-screen bg-gray-950">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">

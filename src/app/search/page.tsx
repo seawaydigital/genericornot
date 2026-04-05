@@ -19,7 +19,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   if (!query) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+      <div className="mx-auto max-w-3xl px-4 md:px-6 py-16 text-center">
         <div className="text-6xl mb-4">🔍</div>
         <h1 className="text-2xl font-bold text-white mb-2">Search Comparisons</h1>
         <p className="text-gray-400">Enter a search term to find comparisons</p>
@@ -39,7 +39,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 space-y-6">
+    <div className="mx-auto max-w-3xl px-4 md:px-6 py-10 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white mb-1">
           Search Results

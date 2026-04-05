@@ -47,7 +47,7 @@ export function ComparisonCard({
       </div>
 
       {/* Title */}
-      <h3 className="text-white font-semibold text-base leading-snug">
+      <h3 className="text-white font-semibold text-base leading-snug line-clamp-2 min-h-0">
         {genericProductName} vs {nameBrandProductName}
       </h3>
 

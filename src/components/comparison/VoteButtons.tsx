@@ -106,7 +106,7 @@ export function VoteButtons({
   return (
     <div className="space-y-3">
       <p className="text-gray-400 text-sm font-medium">Cast your vote</p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex flex-col sm:flex-row gap-3">
         {VOTE_OPTIONS.map((option) => {
           const isSelected = currentVote === option.value;
           return (
@@ -115,7 +115,7 @@ export function VoteButtons({
               onClick={() => handleVote(option.value)}
               disabled={isLoading}
               aria-pressed={isSelected}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-sm font-medium transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed ${
+              className={`flex-1 flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-sm font-medium transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed ${
                 isSelected ? option.selectedClass : option.unselectedClass
               }`}
             >

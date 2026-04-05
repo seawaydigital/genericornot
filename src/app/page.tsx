@@ -122,7 +122,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-gray-950">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gray-950 py-20 px-4">
+      <section className="relative overflow-hidden bg-gray-950 py-16 sm:py-20 px-4 md:px-6 lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/40 via-gray-950 to-gray-950 pointer-events-none" />
         <div className="relative mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
@@ -166,7 +166,7 @@ export default async function Home() {
       </section>
 
       {/* Content sections */}
-      <div className="mx-auto max-w-6xl px-4 pb-20 space-y-16">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 pb-20 space-y-16">
         <TrendingSection comparisons={trending} />
         <CategoryGrid categories={categories} />
         <RecentActivity evidence={recentEvidence} comparisons={recentComparisons} />

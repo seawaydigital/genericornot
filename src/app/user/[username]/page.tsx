@@ -91,7 +91,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   if (!user) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 space-y-10">
+    <div className="mx-auto max-w-3xl px-4 md:px-6 py-10 space-y-10">
       {/* Profile header */}
       <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex items-center gap-5">
         {user.image ? (

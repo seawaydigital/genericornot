@@ -55,7 +55,7 @@ export default function SubmitPage() {
 
   if (status === "loading") {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <div className="mx-auto max-w-2xl px-4 md:px-6 py-16 text-center">
         <p className="text-gray-400">Loading…</p>
       </div>
     );
@@ -63,7 +63,7 @@ export default function SubmitPage() {
 
   if (!session) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center space-y-4">
+      <div className="mx-auto max-w-2xl px-4 md:px-6 py-16 text-center space-y-4">
         <div className="text-5xl mb-4">🔒</div>
         <h1 className="text-2xl font-bold text-white">Sign in to submit a comparison</h1>
         <p className="text-gray-400">
@@ -78,7 +78,7 @@ export default function SubmitPage() {
 
   if (submitted) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center space-y-4">
+      <div className="mx-auto max-w-2xl px-4 md:px-6 py-16 text-center space-y-4">
         <div className="text-5xl mb-4">✅</div>
         <h1 className="text-2xl font-bold text-white">Submitted for review</h1>
         <p className="text-gray-400">
@@ -165,7 +165,7 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-4 md:px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-1">Submit a Comparison</h1>
         <p className="text-gray-400 text-sm">

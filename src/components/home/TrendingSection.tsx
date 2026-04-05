@@ -47,7 +47,7 @@ export function TrendingSection({ comparisons }: TrendingSectionProps) {
       {top6.length === 0 ? (
         <p className="text-gray-500 text-sm">No comparisons yet. Be the first to submit one!</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {top6.map((comparison) => (
             <ComparisonCard
               key={comparison.id}
