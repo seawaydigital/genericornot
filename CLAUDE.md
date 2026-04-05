@@ -130,11 +130,11 @@ npx prisma studio    # Visual DB browser
 - [x] Task 22: User profile page
 - [x] Task 23: Admin dashboard
 
-### Phase 4: Polish (Tasks 24-27)
-- [ ] Task 24: SEO (meta tags, sitemap, JSON-LD)
-- [ ] Task 25: Image upload (Cloudflare R2)
-- [ ] Task 26: Rate limiting
-- [ ] Task 27: Mobile responsiveness + final polish
+### Phase 4: Polish (Tasks 24-27) -- COMPLETE
+- [x] Task 24: SEO (meta tags, sitemap, JSON-LD)
+- [x] Task 25: Image upload (Cloudflare R2)
+- [x] Task 26: Rate limiting
+- [x] Task 27: Mobile responsiveness + final polish
 
 ## Environment Variables
 
