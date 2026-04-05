@@ -1,11 +1,15 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
+import { authOptions } from "@/lib/auth";
 import { computeSavings } from "@/lib/verdict";
 import { VerdictBadge } from "@/components/comparison/VerdictBadge";
 import { ProductSideBySide } from "@/components/comparison/ProductSideBySide";
 import { QuickFacts } from "@/components/comparison/QuickFacts";
 import { EvidenceList } from "@/components/comparison/EvidenceList";
+import { VoteButtons } from "@/components/comparison/VoteButtons";
+import { VoteBreakdown } from "@/components/comparison/VoteBreakdown";
 
 export const revalidate = 60;
 
@@ -66,6 +70,22 @@ export default async function ComparisonPage({ params }: PageProps) {
     if (vote.value === "SAME_QUALITY") voteCounts.sameQuality++;
     else if (vote.value === "CLOSE_ENOUGH") voteCounts.closeEnough++;
     else if (vote.value === "NOT_WORTH_IT") voteCounts.notWorthIt++;
+  }
+
+  // Get current user's vote (if authenticated)
+  const session = await getServerSession(authOptions);
+  let userVote: string | null = null;
+  if (session?.user?.id) {
+    const vote = await prisma.vote.findUnique({
+      where: {
+        userId_comparisonId: {
+          userId: session.user.id,
+          comparisonId: comparison.id,
+        },
+      },
+      select: { value: true },
+    });
+    userVote = vote?.value ?? null;
   }
 
   const evidence = comparison.evidence.map((e) => ({
@@ -146,6 +166,21 @@ export default async function ComparisonPage({ params }: PageProps) {
         {/* Quick facts */}
         <section>
           <QuickFacts evidence={evidence} />
+        </section>
+
+        {/* Voting */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+          <VoteButtons
+            comparisonId={comparison.id}
+            initialVote={userVote}
+            initialVoteCounts={voteCounts}
+          />
+          <VoteBreakdown
+            sameQuality={voteCounts.sameQuality}
+            closeEnough={voteCounts.closeEnough}
+            notWorthIt={voteCounts.notWorthIt}
+            totalVotes={comparison.totalVotes}
+          />
         </section>
 
         {/* Evidence list */}
