@@ -421,7 +421,7 @@ git commit -m "feat: add Prisma schema with all models, enums, and relations"
 
 ---
 
-### Task 4: Auth Setup (NextAuth.js v5)
+### Task 4: Auth Setup (NextAuth.js v4)
 
 **Files:**
 - Create: `src/lib/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`
@@ -1745,7 +1745,7 @@ git commit -m "feat: responsive design fixes and final polish"
 
 After all tasks are complete, verify end-to-end:
 
-1. **Database**: `npx prisma db push && npx prisma db seed` — data populates correctly
+1. **Database**: `npx prisma migrate dev && npx prisma db seed` — migrations apply and data populates correctly
 2. **Dev server**: `npm run dev` — all pages render without errors
 3. **Tests**: `npm test` — all unit tests pass
 4. **Auth flow**: sign in with Google, vote on a comparison, submit evidence
