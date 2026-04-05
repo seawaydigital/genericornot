@@ -101,13 +101,13 @@ npx prisma studio    # Visual DB browser
 
 ## Implementation Status
 
-### Phase 1: Foundation (Tasks 1-6)
-- [ ] Task 1: Next.js 15 project scaffolding
-- [ ] Task 2: Testing infrastructure (Vitest)
-- [ ] Task 3: Prisma setup + full database schema
-- [ ] Task 4: Auth setup (NextAuth v4 + Google OAuth)
-- [ ] Task 5: Verdict computation logic
-- [ ] Task 6: Seed data (50-100 comparisons)
+### Phase 1: Foundation (Tasks 1-6) -- COMPLETE
+- [x] Task 1: Next.js 15 project scaffolding (Next.js 16.2.2 / Tailwind v4)
+- [x] Task 2: Testing infrastructure (Vitest 4.1.2 + React Testing Library)
+- [x] Task 3: Prisma setup + full database schema (Prisma v7)
+- [x] Task 4: Auth setup (NextAuth v4 + @auth/prisma-adapter v2)
+- [x] Task 5: Verdict computation logic (20 tests)
+- [x] Task 6: Seed data (51 comparisons across 8 categories)
 
 ### Phase 2: Core API (Tasks 7-12)
 - [ ] Task 7: Comparisons API — Read
