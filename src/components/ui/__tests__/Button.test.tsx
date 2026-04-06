@@ -12,19 +12,19 @@ describe("Button", () => {
   it("applies primary variant classes by default", () => {
     render(<Button>Test</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("bg-emerald-500");
+    expect(btn.className).toContain("bg-gradient-to-b");
   });
 
   it("applies secondary variant classes", () => {
     render(<Button variant="secondary">Test</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("bg-gray-800");
+    expect(btn.className).toContain("glass");
   });
 
   it("applies ghost variant classes", () => {
     render(<Button variant="ghost">Test</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("hover:bg-gray-800");
+    expect(btn.className).toContain("hover:bg-gray-100");
   });
 
   it("applies sm size classes", () => {

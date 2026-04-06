@@ -38,7 +38,7 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
 
   if (status === "done") {
     return (
-      <p className="text-sm text-gray-400 italic">{message}</p>
+      <p className="text-sm text-gray-500 italic">{message}</p>
     );
   }
 
@@ -47,12 +47,12 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
       <button
         onClick={handleFlag}
         disabled={status === "loading"}
-        className="text-xs text-gray-500 hover:text-amber-400 transition-colors disabled:opacity-50"
+        className="text-xs text-gray-500 hover:text-amber-600 transition-colors disabled:opacity-50"
       >
         {status === "loading" ? "Flagging…" : "Flag as outdated"}
       </button>
       {status === "error" && (
-        <p className="text-xs text-red-400">{message}</p>
+        <p className="text-xs text-red-600">{message}</p>
       )}
     </div>
   );

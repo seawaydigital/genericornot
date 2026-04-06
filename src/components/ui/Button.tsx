@@ -4,9 +4,12 @@ type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-emerald-500 hover:bg-emerald-600 text-white",
-  secondary: "bg-gray-800 hover:bg-gray-700 text-gray-100 border border-gray-700",
-  ghost: "hover:bg-gray-800 text-gray-400",
+  primary:
+    "bg-gradient-to-b from-[#0d1b4a] to-[#162d6b] text-white shadow-sm hover:shadow-md hover:brightness-110 active:brightness-95",
+  secondary:
+    "glass text-gray-700 hover:text-gray-900 hover:border-gray-300",
+  ghost:
+    "text-gray-500 hover:text-gray-700 hover:bg-gray-100",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -41,7 +44,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/20 focus:ring-offset-1 focus:ring-offset-[#fafaf8] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
     >
       {loading ? (
         <>

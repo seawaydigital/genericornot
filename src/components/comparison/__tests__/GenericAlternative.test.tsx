@@ -35,7 +35,7 @@ describe("GenericAlternative", () => {
     render(<GenericAlternative {...baseProps} />);
     const priceEl = screen.getByText("$8.99");
     expect(priceEl).toBeInTheDocument();
-    expect(priceEl.className).toContain("text-emerald-400");
+    expect(priceEl.className).toContain("text-emerald-700");
   });
 
   it("shows 'Price not available' when genericPrice is null", () => {

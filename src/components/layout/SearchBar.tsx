@@ -33,7 +33,7 @@ export function SearchBar({ popular, className = "" }: SearchBarProps) {
     <div className={className}>
       <form onSubmit={handleSubmit} role="search">
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
             <svg
               className="h-5 w-5 text-gray-400"
               xmlns="http://www.w3.org/2000/svg"
@@ -52,19 +52,19 @@ export function SearchBar({ popular, className = "" }: SearchBarProps) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search any product..."
-            className="block w-full rounded-xl border border-gray-700 bg-gray-900 py-3 pl-10 pr-4 text-gray-100 placeholder-gray-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            placeholder="Find your favorite generic (e.g. Ibuprofen, Greek Yogurt)..."
+            className="block w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:border-[#0d1b4a]/30 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200"
           />
         </div>
       </form>
 
       {popular && popular.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
           {popular.map((chip) => (
             <button
               key={chip.query}
               onClick={() => handleChipClick(chip.query)}
-              className="rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-sm text-gray-400 transition-colors hover:border-gray-600 hover:text-gray-300"
+              className="rounded-full bg-gray-100 px-3.5 py-1 text-sm text-gray-500 transition-all duration-200 hover:bg-gray-200 hover:text-gray-700"
             >
               {chip.label}
             </button>

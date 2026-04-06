@@ -50,7 +50,7 @@ describe("ProductCard", () => {
 
   it("shows vote count", () => {
     render(<ProductCard {...baseProps} />);
-    expect(screen.getByText(/47 people voted/)).toBeInTheDocument();
+    expect(screen.getByText(/47 votes/)).toBeInTheDocument();
   });
 
   it("links to the correct comparison URL", () => {

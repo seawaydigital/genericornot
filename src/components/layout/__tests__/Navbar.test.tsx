@@ -23,29 +23,29 @@ import { Navbar } from "../Navbar";
 describe("Navbar", () => {
   it("renders the logo with correct text", () => {
     render(<Navbar />);
-    // The logo link's accessible name is "Generic Or Not" (split text nodes + span)
     const logo = screen.getByRole("link", { name: /generic\s*or\s*not/i });
     expect(logo).toBeInTheDocument();
     expect(logo).toHaveAttribute("href", "/");
   });
 
-  it("renders Categories nav link", () => {
+  it("renders Explore nav link", () => {
     render(<Navbar />);
-    const link = screen.getAllByRole("link", { name: /categories/i })[0];
+    const link = screen.getAllByRole("link", { name: /explore/i })[0];
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute("href", "/categories");
   });
 
-  it("renders Top Rated nav link", () => {
+  it("renders Categories nav link", () => {
     render(<Navbar />);
-    const link = screen.getAllByRole("link", { name: /top rated/i })[0];
-    expect(link).toBeInTheDocument();
+    const links = screen.getAllByRole("link", { name: /categories/i });
+    expect(links.length).toBeGreaterThan(0);
   });
 
-  it("renders New nav link", () => {
+  it("renders About nav link", () => {
     render(<Navbar />);
-    const link = screen.getAllByRole("link", { name: /^new$/i })[0];
+    const link = screen.getAllByRole("link", { name: /about/i })[0];
     expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/about");
   });
 
   it("renders Sign In button when not authenticated", () => {
@@ -54,10 +54,10 @@ describe("Navbar", () => {
     expect(signInButtons.length).toBeGreaterThan(0);
   });
 
-  it("renders Submit link", () => {
+  it("renders Contribute link", () => {
     render(<Navbar />);
-    const submitLinks = screen.getAllByRole("link", { name: /submit/i });
-    expect(submitLinks.length).toBeGreaterThan(0);
-    expect(submitLinks[0]).toHaveAttribute("href", "/submit");
+    const contributeLinks = screen.getAllByRole("link", { name: /contribute/i });
+    expect(contributeLinks.length).toBeGreaterThan(0);
+    expect(contributeLinks[0]).toHaveAttribute("href", "/submit");
   });
 });

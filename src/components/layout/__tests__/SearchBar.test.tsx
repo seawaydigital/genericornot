@@ -19,7 +19,7 @@ describe("SearchBar", () => {
 
   it("has correct placeholder text", () => {
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText("Search any product...");
+    const input = screen.getByPlaceholderText("Find your favorite generic (e.g. Ibuprofen, Greek Yogurt)...");
     expect(input).toBeInTheDocument();
   });
 

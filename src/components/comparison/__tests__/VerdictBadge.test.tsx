@@ -49,16 +49,16 @@ describe("VerdictBadge", () => {
       expect(badge?.className).toContain("red");
     });
 
-    it("uses neutral (gray) variant for MIXED", () => {
+    it("uses neutral variant for MIXED", () => {
       const { container } = render(<VerdictBadge verdict="MIXED" />);
       const badge = container.querySelector("span");
-      expect(badge?.className).toContain("gray");
+      expect(badge?.className).toContain("text-gray-500");
     });
 
-    it("uses neutral (gray) variant for PENDING", () => {
+    it("uses neutral variant for PENDING", () => {
       const { container } = render(<VerdictBadge verdict="PENDING" />);
       const badge = container.querySelector("span");
-      expect(badge?.className).toContain("gray");
+      expect(badge?.className).toContain("text-gray-500");
     });
   });
 

@@ -29,7 +29,6 @@ async function getComparisons(
   page: number
 ) {
   try {
-    // Build orderBy
     type OrderBy =
       | { totalVotes: "desc" }
       | { createdAt: "desc" }
@@ -127,42 +126,44 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-10">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-4xl" role="img" aria-label={category.name}>
-              {category.icon}
-            </span>
-            <h1 className="text-3xl font-extrabold text-white">{category.name}</h1>
+            <div className="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
+              <span className="text-2xl" role="img" aria-label={category.name}>
+                {category.icon}
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{category.name}</h1>
           </div>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 text-sm mt-1 ml-15">
             {category.comparisonCount}{" "}
             {category.comparisonCount === 1 ? "comparison" : "comparisons"}
           </p>
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="mb-8">
           <CategoryFilter currentVerdict={verdict ?? ""} currentSort={sort} />
         </div>
 
         {/* Price disclaimer */}
-        <p className="text-gray-600 text-xs mb-6">
+        <p className="text-gray-300 text-xs mb-6">
           Prices are community-reported and may vary by location.
         </p>
 
         {/* Comparisons grid */}
         {comparisons.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">No comparisons found.</p>
+            <p className="text-gray-400 text-lg">No comparisons found.</p>
             {verdict && (
-              <p className="text-gray-600 text-sm mt-2">
+              <p className="text-gray-300 text-sm mt-2">
                 Try removing the verdict filter or{" "}
                 <Link
                   href={`/categories/${slug}`}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                  className="text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors"
                 >
                   view all comparisons
                 </Link>{" "}
@@ -173,7 +174,20 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {comparisons.map((comparison) => (
-              <ProductCard key={comparison.id} slug={comparison.slug} genericProductName={comparison.genericProductName} genericBrand={comparison.genericBrand} genericStore={comparison.genericStore} genericPrice={comparison.genericPrice} nameBrandProductName={comparison.nameBrandProductName} nameBrand={comparison.nameBrand} nameBrandPrice={comparison.nameBrandPrice} verdict={comparison.verdict} totalVotes={comparison.totalVotes} category={comparison.category} />
+              <ProductCard
+                key={comparison.id}
+                slug={comparison.slug}
+                genericProductName={comparison.genericProductName}
+                genericBrand={comparison.genericBrand}
+                genericStore={comparison.genericStore}
+                genericPrice={comparison.genericPrice}
+                nameBrandProductName={comparison.nameBrandProductName}
+                nameBrand={comparison.nameBrand}
+                nameBrandPrice={comparison.nameBrandPrice}
+                verdict={comparison.verdict}
+                totalVotes={comparison.totalVotes}
+                category={comparison.category}
+              />
             ))}
           </div>
         )}
@@ -181,15 +195,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         {/* Pagination */}
         {totalPages > 1 && (
           <nav
-            className="mt-10 flex items-center justify-center gap-2"
+            className="mt-12 flex items-center justify-center gap-2"
             aria-label="Pagination"
           >
             {page > 1 && (
               <Link
                 href={buildPageUrl(page - 1)}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 text-white text-sm rounded-lg hover:border-gray-500 transition-colors"
+                className="px-4 py-2 glass rounded-xl text-gray-600 text-sm hover:text-gray-900 hover:border-gray-300 transition-all duration-200"
               >
-                ← Previous
+                &larr; Previous
               </Link>
             )}
 
@@ -200,9 +214,9 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
             {page < totalPages && (
               <Link
                 href={buildPageUrl(page + 1)}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 text-white text-sm rounded-lg hover:border-gray-500 transition-colors"
+                className="px-4 py-2 glass rounded-xl text-gray-600 text-sm hover:text-gray-900 hover:border-gray-300 transition-all duration-200"
               >
-                Next →
+                Next &rarr;
               </Link>
             )}
           </nav>

@@ -18,9 +18,9 @@ export function VoteBreakdown({
   const notWorthItPct = total > 0 ? Math.round((notWorthIt / total) * 100) : 0;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Stacked bar */}
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-700">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200">
         {total > 0 ? (
           <>
             {sameQualityPct > 0 && (
@@ -48,16 +48,16 @@ export function VoteBreakdown({
       {/* Labels */}
       <div className="grid grid-cols-3 gap-1 text-xs text-center">
         <div>
-          <p className="text-emerald-400 font-semibold">{sameQualityPct}%</p>
-          <p className="text-gray-500 mt-0.5">Same Quality</p>
+          <p className="text-emerald-700 font-semibold">{sameQualityPct}%</p>
+          <p className="text-gray-400 mt-0.5">Same Quality</p>
         </div>
         <div>
-          <p className="text-amber-400 font-semibold">{closeEnoughPct}%</p>
-          <p className="text-gray-500 mt-0.5">Close Enough</p>
+          <p className="text-amber-700 font-semibold">{closeEnoughPct}%</p>
+          <p className="text-gray-400 mt-0.5">Close Enough</p>
         </div>
         <div>
-          <p className="text-red-400 font-semibold">{notWorthItPct}%</p>
-          <p className="text-gray-500 mt-0.5">Not Worth It</p>
+          <p className="text-red-700 font-semibold">{notWorthItPct}%</p>
+          <p className="text-gray-400 mt-0.5">Not Worth It</p>
         </div>
       </div>
     </div>

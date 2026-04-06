@@ -10,8 +10,8 @@ interface CardProps {
 
 export function Card({ children, className = "", onClick, href }: CardProps) {
   const isInteractive = !!(onClick || href);
-  const baseClasses = `bg-gray-900 border border-gray-800 rounded-xl ${
-    isInteractive ? "hover:border-gray-700 cursor-pointer transition-colors" : ""
+  const baseClasses = `glass rounded-2xl ${
+    isInteractive ? "glass-hover cursor-pointer transition-all duration-200" : ""
   } ${className}`;
 
   if (href) {

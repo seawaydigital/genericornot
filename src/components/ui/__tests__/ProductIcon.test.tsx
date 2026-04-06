@@ -45,10 +45,10 @@ describe("ProductIcon", () => {
     expect(div.className).toContain("custom-class");
   });
 
-  it("has rounded-xl bg styling", () => {
+  it("has rounded-2xl bg styling", () => {
     const { container } = render(<ProductIcon icon="💊" />);
     const div = container.firstChild as HTMLElement;
-    expect(div.className).toContain("rounded-xl");
-    expect(div.className).toContain("bg-gray-800/50");
+    expect(div.className).toContain("rounded-2xl");
+    expect(div.className).toContain("bg-gray-50");
   });
 });

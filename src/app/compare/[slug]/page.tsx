@@ -67,9 +67,6 @@ export default async function ComparisonPage({ params }: PageProps) {
   const nameBrandPrice = comparison.nameBrandPrice ? Number(comparison.nameBrandPrice) : null;
   const savings = computeSavings(genericPrice, nameBrandPrice);
 
-  // Derive vote breakdown from stored totalVotes + verdict.
-  // Actual Vote records are not created by seed, so we approximate from the verdict
-  // percentages used during seed generation. The live vote API updates these on real votes.
   function deriveVoteCounts(verdict: string, total: number) {
     if (total === 0) return { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
     let sq: number, ce: number, nwi: number;
@@ -80,26 +77,22 @@ export default async function ComparisonPage({ params }: PageProps) {
     } else if (verdict === "NOT_WORTH_IT") {
       nwi = Math.round(total * 0.70); ce = Math.round(total * 0.20); sq = total - nwi - ce;
     } else {
-      // MIXED or PENDING — roughly equal thirds
       sq = Math.round(total / 3); ce = Math.round(total / 3); nwi = total - sq - ce;
     }
     return { sameQuality: Math.max(0, sq), closeEnough: Math.max(0, ce), notWorthIt: Math.max(0, nwi) };
   }
 
-  // Check current user's actual vote from vote relation (kept for VoteButtons live state)
   const liveVoteCounts = { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
   for (const vote of comparison.votes) {
     if (vote.value === "SAME_QUALITY") liveVoteCounts.sameQuality++;
     else if (vote.value === "CLOSE_ENOUGH") liveVoteCounts.closeEnough++;
     else if (vote.value === "NOT_WORTH_IT") liveVoteCounts.notWorthIt++;
   }
-  // If there are real vote records, use them; otherwise derive from stored totals
   const hasLiveVotes = comparison.votes.length > 0;
   const voteCounts = hasLiveVotes
     ? liveVoteCounts
     : deriveVoteCounts(comparison.verdict, comparison.totalVotes);
 
-  // Get current user's vote (if authenticated)
   const session = await getServerSession(authOptions);
   let userVote: string | null = null;
   if (session?.user?.id) {
@@ -133,85 +126,86 @@ export default async function ComparisonPage({ params }: PageProps) {
   });
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="mx-auto max-w-3xl px-4 md:px-6 py-10 space-y-8">
-        {/* Brand hero */}
-        <BrandHero
-          nameBrandProductName={comparison.nameBrandProductName}
-          nameBrand={comparison.nameBrand}
-          nameBrandPrice={nameBrandPrice}
-          verdict={comparison.verdict}
-          confidenceScore={comparison.confidenceScore}
-          totalVotes={comparison.totalVotes}
-          savings={savings}
-          categoryIcon={comparison.category?.icon ?? "📦"}
-          lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
-          flaggedOutdated={comparison.flaggedOutdated}
-          slug={comparison.slug}
-        />
+      <div className="mx-auto max-w-6xl px-4 md:px-6 py-12">
+        {/* 2-column layout on desktop */}
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Brand hero */}
+            <BrandHero
+              nameBrandProductName={comparison.nameBrandProductName}
+              nameBrand={comparison.nameBrand}
+              nameBrandPrice={nameBrandPrice}
+              verdict={comparison.verdict}
+              confidenceScore={comparison.confidenceScore}
+              totalVotes={comparison.totalVotes}
+              savings={savings}
+              categoryIcon={comparison.category?.icon ?? "\u{1F4E6}"}
+              lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
+              flaggedOutdated={comparison.flaggedOutdated}
+              slug={comparison.slug}
+            />
 
-        {/* Generic alternative */}
-        <section>
-          <GenericAlternative
-            genericProductName={comparison.genericProductName}
-            genericBrand={comparison.genericBrand}
-            genericStore={comparison.genericStore}
-            genericPrice={genericPrice}
-            categoryIcon={comparison.category?.icon ?? "📦"}
-          />
-        </section>
+            {/* Generic alternative */}
+            <GenericAlternative
+              genericProductName={comparison.genericProductName}
+              genericBrand={comparison.genericBrand}
+              genericStore={comparison.genericStore}
+              genericPrice={genericPrice}
+              categoryIcon={comparison.category?.icon ?? "\u{1F4E6}"}
+            />
 
-        {/* Vote breakdown */}
-        {comparison.totalVotes > 0 && (
-          <section className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-emerald-500/10 rounded-lg p-2">
-              <p className="text-emerald-400 font-semibold text-sm">{voteCounts.sameQuality}</p>
-              <p className="text-gray-500 mt-0.5">Same Quality</p>
+            {/* Vote breakdown inline */}
+            {comparison.totalVotes > 0 && (
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                <div className="glass rounded-2xl p-3">
+                  <p className="text-emerald-700 font-semibold text-sm">{voteCounts.sameQuality}</p>
+                  <p className="text-gray-400 mt-0.5">Same Quality</p>
+                </div>
+                <div className="glass rounded-2xl p-3">
+                  <p className="text-amber-700 font-semibold text-sm">{voteCounts.closeEnough}</p>
+                  <p className="text-gray-400 mt-0.5">Close Enough</p>
+                </div>
+                <div className="glass rounded-2xl p-3">
+                  <p className="text-red-700 font-semibold text-sm">{voteCounts.notWorthIt}</p>
+                  <p className="text-gray-400 mt-0.5">Not Worth It</p>
+                </div>
+              </div>
+            )}
+
+            {/* Evidence list */}
+            <EvidenceList evidence={evidence} />
+
+            {/* Evidence submission form */}
+            <EvidenceForm comparisonId={comparison.id} />
+          </div>
+
+          {/* Sidebar */}
+          <aside className="mt-8 lg:mt-0 space-y-6">
+            {/* Voting card */}
+            <div className="glass rounded-2xl p-6 space-y-5 lg:sticky lg:top-20">
+              <VoteButtons
+                comparisonId={comparison.id}
+                initialVote={userVote}
+                initialVoteCounts={voteCounts}
+              />
+              <VoteBreakdown
+                sameQuality={voteCounts.sameQuality}
+                closeEnough={voteCounts.closeEnough}
+                notWorthIt={voteCounts.notWorthIt}
+                totalVotes={comparison.totalVotes}
+              />
             </div>
-            <div className="bg-amber-500/10 rounded-lg p-2">
-              <p className="text-amber-400 font-semibold text-sm">{voteCounts.closeEnough}</p>
-              <p className="text-gray-500 mt-0.5">Close Enough</p>
-            </div>
-            <div className="bg-red-500/10 rounded-lg p-2">
-              <p className="text-red-400 font-semibold text-sm">{voteCounts.notWorthIt}</p>
-              <p className="text-gray-500 mt-0.5">Not Worth It</p>
-            </div>
-          </section>
-        )}
 
-        {/* Quick facts */}
-        <section>
-          <QuickFacts evidence={evidence} />
-        </section>
-
-        {/* Voting */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
-          <VoteButtons
-            comparisonId={comparison.id}
-            initialVote={userVote}
-            initialVoteCounts={voteCounts}
-          />
-          <VoteBreakdown
-            sameQuality={voteCounts.sameQuality}
-            closeEnough={voteCounts.closeEnough}
-            notWorthIt={voteCounts.notWorthIt}
-            totalVotes={comparison.totalVotes}
-          />
-        </section>
-
-        {/* Evidence list */}
-        <section>
-          <EvidenceList evidence={evidence} />
-        </section>
-
-        {/* Evidence submission form */}
-        <section>
-          <EvidenceForm comparisonId={comparison.id} />
-        </section>
+            {/* Quick facts */}
+            <QuickFacts evidence={evidence} />
+          </aside>
+        </div>
       </div>
     </div>
   );

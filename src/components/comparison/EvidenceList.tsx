@@ -24,40 +24,40 @@ interface EvidenceListProps {
 const evidenceTypeConfig: Record<string, { label: string; color: string }> = {
   MANUFACTURER_INFO: {
     label: "Manufacturer Info",
-    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    color: "bg-emerald-50 text-emerald-700",
   },
   INGREDIENT_COMPARISON: {
     label: "Ingredients",
-    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    color: "bg-blue-50 text-blue-700",
   },
   PHOTO: {
     label: "Photo",
-    color: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    color: "bg-violet-50 text-violet-700",
   },
   VIDEO_LINK: {
     label: "Video",
-    color: "bg-red-500/10 text-red-400 border-red-500/20",
+    color: "bg-red-50 text-red-700",
   },
   OTHER: {
     label: "Other",
-    color: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    color: "bg-gray-100 text-gray-500",
   },
 };
 
-const fallbackType = { label: "Evidence", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" };
+const fallbackType = { label: "Evidence", color: "bg-gray-100 text-gray-500" };
 
 const confidenceConfig: Record<string, { label: string; color: string }> = {
   CONFIRMED: {
-    label: "✓ Confirmed",
-    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    label: "\u2713 Confirmed",
+    color: "bg-emerald-50 text-emerald-700",
   },
   COMMUNITY: {
     label: "Community Reported",
-    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    color: "bg-blue-50 text-blue-700",
   },
   UNVERIFIED: {
     label: "Unverified",
-    color: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    color: "bg-gray-100 text-gray-500",
   },
 };
 
@@ -71,9 +71,9 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
 
   if (evidence.length === 0) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-white font-semibold text-base mb-3">Evidence</h2>
-        <p className="text-gray-500 text-sm">No evidence submitted yet.</p>
+      <div className="glass rounded-2xl p-6">
+        <h2 className="text-gray-900 font-semibold text-base mb-3">Evidence</h2>
+        <p className="text-gray-400 text-sm">No evidence submitted yet.</p>
       </div>
     );
   }
@@ -82,10 +82,10 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
   const hasMore = evidence.length > 3;
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-      <h2 className="text-white font-semibold text-base mb-4">
+    <div className="glass rounded-2xl p-6">
+      <h2 className="text-gray-900 font-semibold text-base mb-4">
         Evidence{" "}
-        <span className="text-gray-500 font-normal text-sm">({evidence.length})</span>
+        <span className="text-gray-400 font-normal text-sm">({evidence.length})</span>
       </h2>
       <div className="flex flex-col gap-4">
         {visible.map((entry) => {
@@ -93,33 +93,33 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
           const confKey = entry.confidence ?? "UNVERIFIED";
           const conf = confidenceConfig[confKey] ?? confidenceConfig.UNVERIFIED;
           return (
-            <div key={entry.id} className="border-b border-gray-800 last:border-0 pb-4 last:pb-0">
+            <div key={entry.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeConfig.color}`}
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeConfig.color}`}
                 >
                   {typeConfig.label}
                 </span>
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${conf.color}`}
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${conf.color}`}
                 >
                   {conf.label}
                 </span>
-                <span className="text-gray-500 text-xs">
+                <span className="text-gray-400 text-xs">
                   by{" "}
-                  <span className="text-gray-400 font-medium">{entry.user.username}</span>
+                  <span className="text-gray-500 font-medium">{entry.user.username}</span>
                 </span>
-                <span className="text-gray-600 text-xs">{formatDate(entry.createdAt)}</span>
+                <span className="text-gray-300 text-xs">{formatDate(entry.createdAt)}</span>
               </div>
-              <p className="text-gray-300 text-sm leading-relaxed">{entry.content}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{entry.content}</p>
               {entry.url && (
                 <a
                   href={entry.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block mt-2 text-blue-400 hover:text-blue-300 text-xs underline underline-offset-2 transition-colors"
+                  className="inline-block mt-2 text-[#0d1b4a] hover:text-[#1e3a7a] text-xs transition-colors"
                 >
-                  View source →
+                  View source &rarr;
                 </a>
               )}
             </div>
@@ -130,7 +130,7 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
       {hasMore && !showAll && (
         <button
           onClick={() => setShowAll(true)}
-          className="mt-4 text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
+          className="mt-4 text-sm text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors font-medium"
         >
           Show all ({evidence.length})
         </button>

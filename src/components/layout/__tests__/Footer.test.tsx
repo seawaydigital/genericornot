@@ -12,12 +12,13 @@ import { Footer } from "../Footer";
 describe("Footer", () => {
   it("renders GenericOrNot branding", () => {
     render(<Footer />);
-    expect(screen.getByText(/genericornot/i)).toBeInTheDocument();
+    const links = screen.getAllByText(/generic/i);
+    expect(links.length).toBeGreaterThan(0);
   });
 
   it("renders the tagline", () => {
     render(<Footer />);
-    expect(screen.getByText(/community-powered product comparisons/i)).toBeInTheDocument();
+    expect(screen.getByText(/editorial truth in consumer advocacy/i)).toBeInTheDocument();
   });
 
   it("renders copyright with current year", () => {
@@ -26,7 +27,7 @@ describe("Footer", () => {
     expect(screen.getByText(new RegExp(year))).toBeInTheDocument();
   });
 
-  it("renders About link", () => {
+  it("renders About Us link", () => {
     render(<Footer />);
     const link = screen.getByRole("link", { name: /about/i });
     expect(link).toBeInTheDocument();
@@ -46,9 +47,10 @@ describe("Footer", () => {
     expect(link).toBeInTheDocument();
   });
 
-  it("renders Contact link", () => {
+  it("renders Contribute link", () => {
     render(<Footer />);
-    const link = screen.getByRole("link", { name: /contact/i });
+    const link = screen.getByRole("link", { name: /contribute/i });
     expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/submit");
   });
 });

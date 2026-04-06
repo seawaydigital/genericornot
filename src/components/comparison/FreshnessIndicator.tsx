@@ -17,8 +17,8 @@ function monthsAgo(date: Date | string): number {
 export function FreshnessIndicator({ lastVerifiedAt, flaggedOutdated }: FreshnessIndicatorProps) {
   if (flaggedOutdated) {
     return (
-      <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-        <span>⚠</span>
+      <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2">
+        <span>&#9888;</span>
         <span>Users have flagged this as potentially outdated</span>
       </div>
     );
@@ -26,8 +26,8 @@ export function FreshnessIndicator({ lastVerifiedAt, flaggedOutdated }: Freshnes
 
   if (!lastVerifiedAt) {
     return (
-      <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-        <span>⚠</span>
+      <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2">
+        <span>&#9888;</span>
         <span>May be outdated — not yet verified</span>
       </div>
     );
@@ -37,8 +37,8 @@ export function FreshnessIndicator({ lastVerifiedAt, flaggedOutdated }: Freshnes
 
   if (months <= 6) {
     return (
-      <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
-        <span>✓</span>
+      <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2">
+        <span>&#10003;</span>
         <span>Verified {formatDate(lastVerifiedAt)}</span>
       </div>
     );
@@ -46,16 +46,16 @@ export function FreshnessIndicator({ lastVerifiedAt, flaggedOutdated }: Freshnes
 
   if (months <= 12) {
     return (
-      <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-        <span>⏱</span>
+      <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
+        <span>&#9201;</span>
         <span>Last verified {formatDate(lastVerifiedAt)}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-      <span>⚠</span>
+    <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2">
+      <span>&#9888;</span>
       <span>May be outdated — last verified {formatDate(lastVerifiedAt)}</span>
     </div>
   );

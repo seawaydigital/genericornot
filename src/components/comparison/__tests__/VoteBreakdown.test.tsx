@@ -44,9 +44,10 @@ describe("VoteBreakdown", () => {
         totalVotes={0}
       />
     );
-    // Gray bar should be visible
-    const grayBar = container.querySelector(".bg-gray-700");
-    expect(grayBar).toBeInTheDocument();
+    // Bar background should be visible
+    const bar = container.querySelector(".rounded-full");
+    expect(bar).toBeInTheDocument();
+    expect(bar?.className).toContain("bg-gray-200");
     // All percentages are 0%
     const zeros = screen.getAllByText("0%");
     expect(zeros.length).toBeGreaterThanOrEqual(3);

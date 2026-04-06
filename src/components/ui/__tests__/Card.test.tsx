@@ -19,9 +19,8 @@ describe("Card", () => {
   it("applies base dark theme classes", () => {
     const { container } = render(<Card>Content</Card>);
     const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain("bg-gray-900");
-    expect(card.className).toContain("border-gray-800");
-    expect(card.className).toContain("rounded-xl");
+    expect(card.className).toContain("glass");
+    expect(card.className).toContain("rounded-2xl");
   });
 
   it("renders as a link when href is provided", () => {
@@ -34,7 +33,7 @@ describe("Card", () => {
   it("adds hover styles when href is provided", () => {
     render(<Card href="/path">Content</Card>);
     const link = screen.getByRole("link");
-    expect(link.className).toContain("hover:border-gray-700");
+    expect(link.className).toContain("glass-hover");
   });
 
   it("calls onClick when clicked", async () => {
@@ -48,7 +47,7 @@ describe("Card", () => {
   it("adds hover styles when onClick is provided", () => {
     const { container } = render(<Card onClick={vi.fn()}>Content</Card>);
     const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain("hover:border-gray-700");
+    expect(card.className).toContain("glass-hover");
   });
 
   it("accepts additional className", () => {

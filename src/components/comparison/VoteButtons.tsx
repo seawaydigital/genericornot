@@ -25,29 +25,29 @@ const VOTE_OPTIONS: {
   {
     value: "SAME_QUALITY",
     label: "Same Quality",
-    emoji: "👍",
+    emoji: "\ud83d\udc4d",
     selectedClass:
-      "bg-emerald-500/10 border-emerald-500 text-emerald-400",
+      "bg-emerald-50 border-emerald-300 text-emerald-700",
     unselectedClass:
-      "bg-gray-800 border-gray-700 text-gray-300 hover:border-emerald-700 hover:text-emerald-400",
+      "bg-white border-gray-200 text-gray-500 hover:border-emerald-200 hover:text-emerald-600",
   },
   {
     value: "CLOSE_ENOUGH",
     label: "Close Enough",
-    emoji: "🤷",
+    emoji: "\ud83e\udd37",
     selectedClass:
-      "bg-amber-500/10 border-amber-500 text-amber-400",
+      "bg-amber-50 border-amber-300 text-amber-700",
     unselectedClass:
-      "bg-gray-800 border-gray-700 text-gray-300 hover:border-amber-700 hover:text-amber-400",
+      "bg-white border-gray-200 text-gray-500 hover:border-amber-200 hover:text-amber-600",
   },
   {
     value: "NOT_WORTH_IT",
     label: "Not Worth It",
-    emoji: "👎",
+    emoji: "\ud83d\udc4e",
     selectedClass:
-      "bg-red-500/10 border-red-500 text-red-400",
+      "bg-red-50 border-red-300 text-red-700",
     unselectedClass:
-      "bg-gray-800 border-gray-700 text-gray-300 hover:border-red-700 hover:text-red-400",
+      "bg-white border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-600",
   },
 ];
 
@@ -64,9 +64,9 @@ export function VoteButtons({
 
   if (status === "loading" || status === "unauthenticated" || !session) {
     return (
-      <div className="rounded-xl bg-gray-900 border border-gray-800 p-5 text-center">
-        <p className="text-gray-400 text-sm">
-          <a href="/api/auth/signin" className="text-emerald-400 hover:underline">
+      <div className="glass rounded-2xl p-5 text-center">
+        <p className="text-gray-500 text-sm">
+          <a href="/api/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
             Sign in to vote
           </a>{" "}
           on this comparison.
@@ -78,7 +78,6 @@ export function VoteButtons({
   async function handleVote(value: VoteValue) {
     if (isLoading) return;
     const previousVote = currentVote;
-    // Optimistic update
     setCurrentVote(value);
     setError(null);
     setIsLoading(true);
@@ -91,7 +90,6 @@ export function VoteButtons({
       });
 
       if (!res.ok) {
-        // Revert on error
         setCurrentVote(previousVote);
         setError("Failed to save your vote. Please try again.");
       }
@@ -105,7 +103,7 @@ export function VoteButtons({
 
   return (
     <div className="space-y-3">
-      <p className="text-gray-400 text-sm font-medium">Cast your vote</p>
+      <p className="text-gray-500 text-sm font-medium">Cast your vote</p>
       <div className="flex flex-col sm:flex-row gap-3">
         {VOTE_OPTIONS.map((option) => {
           const isSelected = currentVote === option.value;
@@ -115,7 +113,7 @@ export function VoteButtons({
               onClick={() => handleVote(option.value)}
               disabled={isLoading}
               aria-pressed={isSelected}
-              className={`flex-1 flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-sm font-medium transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed ${
+              className={`flex-1 flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isSelected ? option.selectedClass : option.unselectedClass
               }`}
             >
@@ -128,7 +126,7 @@ export function VoteButtons({
         })}
       </div>
       {error && (
-        <p className="text-red-400 text-xs text-center" role="alert">
+        <p className="text-red-600 text-xs text-center" role="alert">
           {error}
         </p>
       )}

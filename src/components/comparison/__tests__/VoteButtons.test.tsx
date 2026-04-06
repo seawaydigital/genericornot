@@ -116,7 +116,7 @@ describe("VoteButtons", () => {
 
     await waitFor(() => {
       const notWorthItBtn = screen.getByRole("button", { name: /not worth it/i });
-      expect(notWorthItBtn.className).not.toContain("border-red-500");
+      expect(notWorthItBtn.className).not.toContain("bg-red-500/10");
     });
 
     vi.unstubAllGlobals();

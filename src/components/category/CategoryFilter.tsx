@@ -21,28 +21,20 @@ const SORT_OPTIONS = [
   { label: "Highest Savings", value: "savings" },
 ] as const;
 
-const verdictBorderColor: Record<string, string> = {
-  SAME_QUALITY: "border-emerald-500 text-emerald-400",
-  CLOSE_ENOUGH: "border-amber-500 text-amber-400",
-  NOT_WORTH_IT: "border-red-500 text-red-400",
+const verdictActiveColor: Record<string, string> = {
+  SAME_QUALITY: "border-emerald-300 text-emerald-700 bg-emerald-50",
+  CLOSE_ENOUGH: "border-amber-300 text-amber-700 bg-amber-50",
+  NOT_WORTH_IT: "border-red-300 text-red-700 bg-red-50",
 };
 
-export function CategoryFilter({
-  currentVerdict = "",
-  currentSort = "totalVotes",
-}: CategoryFilterProps) {
+export function CategoryFilter({ currentVerdict = "", currentSort = "totalVotes" }: CategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const updateParams = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      // Reset to page 1 on filter/sort change
+      if (value) { params.set(key, value); } else { params.delete(key); }
       params.delete("page");
       router.push(`?${params.toString()}`);
     },
@@ -51,23 +43,18 @@ export function CategoryFilter({
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-      {/* Verdict filters */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by verdict">
         {VERDICT_FILTERS.map(({ label, value }) => {
           const isActive = currentVerdict === value;
-          const activeColorClass =
-            value === ""
-              ? "border-gray-400 text-white"
-              : (verdictBorderColor[value] ?? "border-gray-400 text-white");
-
+          const activeColorClass = value === ""
+            ? "border-gray-400 text-gray-900 bg-gray-50"
+            : (verdictActiveColor[value] ?? "border-gray-400 text-gray-900 bg-gray-50");
           return (
             <button
               key={value || "all"}
               onClick={() => updateParams("verdict", value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                isActive
-                  ? `bg-gray-800 ${activeColorClass}`
-                  : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
+                isActive ? activeColorClass : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
               }`}
               aria-pressed={isActive}
             >
@@ -76,28 +63,16 @@ export function CategoryFilter({
           );
         })}
       </div>
-
-      {/* Spacer */}
       <div className="flex-1 hidden sm:block" />
-
-      {/* Sort dropdown */}
       <div className="flex items-center gap-2">
-        <label
-          htmlFor="sort-select"
-          className="text-gray-400 text-sm whitespace-nowrap"
-        >
-          Sort by:
-        </label>
+        <label htmlFor="sort-select" className="text-gray-400 text-sm whitespace-nowrap">Sort by:</label>
         <select
-          id="sort-select"
-          value={currentSort}
+          id="sort-select" value={currentSort}
           onChange={(e) => updateParams("sort", e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+          className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/20 cursor-pointer transition-all duration-200"
         >
           {SORT_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
       </div>

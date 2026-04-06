@@ -22,18 +22,17 @@ const sizePx = {
 };
 
 export function ProductIcon({
-  icon = "📦",
+  icon = "\u{1F4E6}",
   imageUrl,
   brandName,
   size = "md",
   className = "",
 }: ProductIconProps) {
-  // Resolve logo URL: explicit imageUrl wins, then brandName lookup, then null
   const logoUrl = imageUrl ?? (brandName ? getBrandLogoUrl(brandName, sizePx[size] * 2) : null);
 
   return (
     <div
-      className={`flex items-center justify-center rounded-xl bg-gray-800/50 border border-gray-700/50 ${sizeClasses[size]} ${className}`}
+      className={`flex items-center justify-center rounded-2xl bg-gray-50 border border-gray-200 ${sizeClasses[size]} ${className}`}
     >
       {logoUrl ? (
         <Image
@@ -41,7 +40,7 @@ export function ProductIcon({
           alt={brandName ?? "brand logo"}
           width={sizePx[size]}
           height={sizePx[size]}
-          className="object-contain rounded-lg"
+          className="object-contain rounded-xl"
           unoptimized
         />
       ) : (

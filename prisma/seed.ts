@@ -89,7 +89,7 @@ async function main() {
   });
   console.log("Created admin user.");
 
-  // ─── GROCERY (25 products) ───────────────────────────────────────────────
+  // ─── GROCERY (33 products) ───────────────────────────────────────────────
 
   const groceryComparisons = [
     {
@@ -396,9 +396,114 @@ async function main() {
       // PENDING for admin queue testing
       status: ComparisonStatus.PENDING,
     },
+    // ─── CANADIAN GROCERY ───────────────────────────────────────────────────
+    {
+      slug: "no-name-butter-vs-lactantia",
+      genericProductName: "No Name Butter",
+      genericBrand: "No Name",
+      genericStore: "Loblaws",
+      genericPrice: 4.99,
+      nameBrandProductName: "Lactantia Butter",
+      nameBrand: "Lactantia",
+      nameBrandPrice: 6.99,
+      ...makeVotes("SAME_QUALITY", 200),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-10"),
+    },
+    {
+      slug: "pc-decadent-chocolate-chip-cookies-vs-chips-ahoy",
+      genericProductName: "PC Decadent Chocolate Chip Cookies",
+      genericBrand: "President's Choice",
+      genericStore: "Loblaws",
+      genericPrice: 3.99,
+      nameBrandProductName: "Chips Ahoy! Original Chocolate Chip Cookies",
+      nameBrand: "Chips Ahoy!",
+      nameBrandPrice: 4.49,
+      ...makeVotes("NOT_WORTH_IT", 310),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-18"),
+    },
+    {
+      slug: "no-name-canned-tomatoes-vs-hunts",
+      genericProductName: "No Name Diced Tomatoes",
+      genericBrand: "No Name",
+      genericStore: "Loblaws",
+      genericPrice: 1.29,
+      nameBrandProductName: "Hunt's Diced Tomatoes",
+      nameBrand: "Hunt's",
+      nameBrandPrice: 2.49,
+      ...makeVotes("SAME_QUALITY", 180),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-28"),
+    },
+    {
+      slug: "compliments-frozen-vegetables-vs-green-giant",
+      genericProductName: "Compliments Frozen Mixed Vegetables",
+      genericBrand: "Compliments",
+      genericStore: "Sobeys",
+      genericPrice: 2.99,
+      nameBrandProductName: "Green Giant Frozen Mixed Vegetables",
+      nameBrand: "Green Giant",
+      nameBrandPrice: 4.49,
+      ...makeVotes("SAME_QUALITY", 150),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-05"),
+    },
+    {
+      slug: "selection-pasta-vs-barilla",
+      genericProductName: "Selection Spaghetti Pasta",
+      genericBrand: "Selection",
+      genericStore: "Metro",
+      genericPrice: 1.49,
+      nameBrandProductName: "Barilla Spaghetti",
+      nameBrand: "Barilla",
+      nameBrandPrice: 2.99,
+      ...makeVotes("SAME_QUALITY", 170),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-12"),
+    },
+    {
+      slug: "no-name-all-purpose-flour-vs-robin-hood",
+      genericProductName: "No Name All Purpose Flour",
+      genericBrand: "No Name",
+      genericStore: "Loblaws",
+      genericPrice: 5.49,
+      nameBrandProductName: "Robin Hood All Purpose Flour",
+      nameBrand: "Robin Hood",
+      nameBrandPrice: 7.99,
+      ...makeVotes("SAME_QUALITY", 190),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-20"),
+    },
+    {
+      slug: "pc-blue-menu-granola-vs-nature-valley",
+      genericProductName: "PC Blue Menu Granola Cereal",
+      genericBrand: "President's Choice",
+      genericStore: "Loblaws",
+      genericPrice: 4.49,
+      nameBrandProductName: "Nature Valley Oats & Honey Granola",
+      nameBrand: "Nature Valley",
+      nameBrandPrice: 5.99,
+      ...makeVotes("CLOSE_ENOUGH", 140),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-22"),
+    },
+    {
+      slug: "great-value-maple-syrup-vs-aunt-jemima",
+      genericProductName: "Great Value Pure Maple Syrup",
+      genericBrand: "Great Value",
+      genericStore: "Walmart Canada",
+      genericPrice: 12.97,
+      nameBrandProductName: "Aunt Jemima Original Syrup",
+      nameBrand: "Aunt Jemima",
+      nameBrandPrice: 4.97,
+      ...makeVotes("CLOSE_ENOUGH", 250),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-15"),
+    },
   ];
 
-  // ─── HEALTH & OTC (18 products) ─────────────────────────────────────────
+  // ─── HEALTH & OTC (22 products) ─────────────────────────────────────────
 
   const healthComparisons = [
     {
@@ -620,9 +725,62 @@ async function main() {
       ...makeVotes("SAME_QUALITY", 88),
       status: ComparisonStatus.APPROVED,
     },
+    // ─── CANADIAN HEALTH & OTC ──────────────────────────────────────────────
+    {
+      slug: "life-brand-ibuprofen-vs-advil",
+      genericProductName: "Life Brand Ibuprofen 200mg",
+      genericBrand: "Life Brand",
+      genericStore: "Shoppers Drug Mart",
+      genericPrice: 6.99,
+      nameBrandProductName: "Advil Ibuprofen 200mg",
+      nameBrand: "Advil",
+      nameBrandPrice: 12.99,
+      ...makeVotes("SAME_QUALITY", 280),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-20"),
+    },
+    {
+      slug: "exact-acetaminophen-vs-tylenol",
+      genericProductName: "Exact Acetaminophen 500mg",
+      genericBrand: "Exact",
+      genericStore: "Shoppers Drug Mart",
+      genericPrice: 5.49,
+      nameBrandProductName: "Tylenol Extra Strength 500mg",
+      nameBrand: "Tylenol",
+      nameBrandPrice: 11.99,
+      ...makeVotes("SAME_QUALITY", 250),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-14"),
+    },
+    {
+      slug: "life-brand-allergy-relief-vs-reactine",
+      genericProductName: "Life Brand Allergy Relief Cetirizine 10mg",
+      genericBrand: "Life Brand",
+      genericStore: "Shoppers Drug Mart",
+      genericPrice: 9.99,
+      nameBrandProductName: "Reactine Cetirizine 10mg",
+      nameBrand: "Reactine",
+      nameBrandPrice: 19.99,
+      ...makeVotes("SAME_QUALITY", 200),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-25"),
+    },
+    {
+      slug: "compliments-vitamin-d-vs-jamieson",
+      genericProductName: "Compliments Vitamin D 1000 IU",
+      genericBrand: "Compliments",
+      genericStore: "Sobeys",
+      genericPrice: 4.99,
+      nameBrandProductName: "Jamieson Vitamin D 1000 IU",
+      nameBrand: "Jamieson",
+      nameBrandPrice: 8.99,
+      ...makeVotes("SAME_QUALITY", 160),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-08"),
+    },
   ];
 
-  // ─── CLEANING (10 products) ──────────────────────────────────────────────
+  // ─── CLEANING (13 products) ──────────────────────────────────────────────
 
   const cleaningComparisons = [
     {
@@ -746,9 +904,49 @@ async function main() {
       // PENDING for admin queue testing
       status: ComparisonStatus.PENDING,
     },
+    // ─── CANADIAN CLEANING ──────────────────────────────────────────────────
+    {
+      slug: "no-name-dish-soap-vs-dawn",
+      genericProductName: "No Name Dish Soap",
+      genericBrand: "No Name",
+      genericStore: "Loblaws",
+      genericPrice: 2.99,
+      nameBrandProductName: "Dawn Ultra Dishwashing Liquid",
+      nameBrand: "Dawn",
+      nameBrandPrice: 4.99,
+      ...makeVotes("CLOSE_ENOUGH", 190),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-10"),
+    },
+    {
+      slug: "compliments-garbage-bags-vs-glad",
+      genericProductName: "Compliments Kitchen Garbage Bags",
+      genericBrand: "Compliments",
+      genericStore: "Sobeys",
+      genericPrice: 6.99,
+      nameBrandProductName: "Glad Kitchen Catchers",
+      nameBrand: "Glad",
+      nameBrandPrice: 11.99,
+      ...makeVotes("SAME_QUALITY", 170),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-18"),
+    },
+    {
+      slug: "pc-green-cleaning-spray-vs-seventh-generation",
+      genericProductName: "PC Green All-Purpose Cleaning Spray",
+      genericBrand: "President's Choice",
+      genericStore: "Loblaws",
+      genericPrice: 4.49,
+      nameBrandProductName: "Seventh Generation All-Purpose Cleaner",
+      nameBrand: "Seventh Generation",
+      nameBrandPrice: 6.99,
+      ...makeVotes("CLOSE_ENOUGH", 130),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-25"),
+    },
   ];
 
-  // ─── BABY & KIDS (8 products) ────────────────────────────────────────────
+  // ─── BABY & KIDS (10 products) ───────────────────────────────────────────
 
   const babyComparisons = [
     {
@@ -848,9 +1046,36 @@ async function main() {
       ...makeVotes("CLOSE_ENOUGH", 156),
       status: ComparisonStatus.APPROVED,
     },
+    // ─── CANADIAN BABY & KIDS ───────────────────────────────────────────────
+    {
+      slug: "pc-baby-wipes-vs-pampers-wipes",
+      genericProductName: "PC Baby Wipes",
+      genericBrand: "President's Choice",
+      genericStore: "Loblaws",
+      genericPrice: 5.99,
+      nameBrandProductName: "Pampers Sensitive Baby Wipes",
+      nameBrand: "Pampers",
+      nameBrandPrice: 9.99,
+      ...makeVotes("SAME_QUALITY", 160),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-02"),
+    },
+    {
+      slug: "compliments-baby-formula-vs-similac",
+      genericProductName: "Compliments Infant Formula",
+      genericBrand: "Compliments",
+      genericStore: "Sobeys",
+      genericPrice: 24.99,
+      nameBrandProductName: "Similac Advance Infant Formula",
+      nameBrand: "Similac",
+      nameBrandPrice: 39.99,
+      ...makeVotes("CLOSE_ENOUGH", 140),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-16"),
+    },
   ];
 
-  // ─── PERSONAL CARE (10 products) ────────────────────────────────────────
+  // ─── PERSONAL CARE (13 products) ────────────────────────────────────────
 
   const personalCareComparisons = [
     {
@@ -972,6 +1197,46 @@ async function main() {
       nameBrandPrice: 7.97,
       ...makeVotes("CLOSE_ENOUGH", 231),
       status: ComparisonStatus.APPROVED,
+    },
+    // ─── CANADIAN PERSONAL CARE ─────────────────────────────────────────────
+    {
+      slug: "life-brand-shampoo-vs-pantene",
+      genericProductName: "Life Brand Moisture Renewal Shampoo",
+      genericBrand: "Life Brand",
+      genericStore: "Shoppers Drug Mart",
+      genericPrice: 5.99,
+      nameBrandProductName: "Pantene Pro-V Daily Moisture Renewal Shampoo",
+      nameBrand: "Pantene",
+      nameBrandPrice: 8.99,
+      ...makeVotes("CLOSE_ENOUGH", 180),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-12"),
+    },
+    {
+      slug: "no-name-facial-tissue-vs-kleenex",
+      genericProductName: "No Name Facial Tissue",
+      genericBrand: "No Name",
+      genericStore: "Loblaws",
+      genericPrice: 4.99,
+      nameBrandProductName: "Kleenex Ultra Soft Facial Tissue",
+      nameBrand: "Kleenex",
+      nameBrandPrice: 8.99,
+      ...makeVotes("SAME_QUALITY", 220),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-22"),
+    },
+    {
+      slug: "compliments-toothpaste-vs-colgate",
+      genericProductName: "Compliments Cavity Protection Toothpaste",
+      genericBrand: "Compliments",
+      genericStore: "Sobeys",
+      genericPrice: 2.99,
+      nameBrandProductName: "Colgate Cavity Protection Toothpaste",
+      nameBrand: "Colgate",
+      nameBrandPrice: 5.99,
+      ...makeVotes("SAME_QUALITY", 170),
+      status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-06"),
     },
   ];
 
@@ -2221,6 +2486,39 @@ async function main() {
       title: "Same silicone coating, equivalent non-stick performance",
       content:
         "Parchment paper is a commodity product: paper coated with silicone for non-stick baking. Great Value Parchment Paper has the same silicone coating and temperature rating (425°F) as Reynolds Kitchens. Baking tests show identical non-stick performance. One of the easiest store-brand swaps.",
+    },
+    // ─── CANADIAN EVIDENCE ENTRIES ──────────────────────────────────────────
+    {
+      comparisonSlug: "pc-decadent-chocolate-chip-cookies-vs-chips-ahoy",
+      type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
+      title: "PC Decadent widely considered SUPERIOR to Chips Ahoy",
+      content:
+        "PC Decadent Cookies are widely considered superior to Chips Ahoy by Canadian consumers. Blind taste tests by CBC Marketplace consistently rank PC Decadent as having better chocolate quality, thicker texture, and more premium taste. This is a rare case where the store brand beats the name brand.",
+    },
+    {
+      comparisonSlug: "life-brand-ibuprofen-vs-advil",
+      type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
+      title: "Health Canada requires identical bioequivalence for generic ibuprofen",
+      content:
+        "Health Canada requires all generic ibuprofen to contain the exact same active ingredient (ibuprofen 200mg) with identical bioequivalence. Life Brand is manufactured by Apotex, Canada's largest generic pharmaceutical company. Inactive ingredients may differ but do not affect efficacy.",
+    },
+    {
+      comparisonSlug: "no-name-butter-vs-lactantia",
+      type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
+      title: "Canadian butter must contain minimum 80% milk fat by law",
+      content:
+        "Canadian butter must contain a minimum of 80% milk fat by law (CFIA regulations). Both No Name and Lactantia meet this standard. The only meaningful difference is that Lactantia churns at slightly lower temperatures, which some claim produces better texture, but blind taste tests show negligible difference.",
+    },
+    {
+      comparisonSlug: "great-value-maple-syrup-vs-aunt-jemima",
+      type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
+      title: "Real maple syrup vs table syrup — fundamentally different products",
+      content:
+        "Important distinction: Great Value sells REAL maple syrup (100% pure, Canada Grade A), while Aunt Jemima (now Pearl Milling Company) is table syrup made primarily from corn syrup with maple flavoring. These are fundamentally different products. The Great Value version is actually the premium product despite being cheaper per mL when bought in bulk.",
     },
   ];
 

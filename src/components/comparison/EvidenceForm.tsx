@@ -23,6 +23,9 @@ interface EvidenceFormProps {
   onEvidenceAdded?: () => void;
 }
 
+const inputClasses =
+  "w-full bg-white border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#0d1b4a]/30 focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200";
+
 export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProps) {
   const { data: session, status } = useSession();
 
@@ -36,10 +39,10 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
 
   if (status === "loading" || status === "unauthenticated" || !session) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-white font-semibold text-base mb-3">Add Evidence</h2>
-        <p className="text-gray-400 text-sm">
-          <a href="/api/auth/signin" className="text-emerald-400 hover:underline">
+      <div className="glass rounded-2xl p-6">
+        <h2 className="text-gray-900 font-semibold text-base mb-3">Add Evidence</h2>
+        <p className="text-gray-500 text-sm">
+          <a href="/api/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
             Sign in to contribute evidence
           </a>{" "}
           on this comparison.
@@ -67,7 +70,6 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
         return;
       }
 
-      // Success — clear form and show message
       setType("MANUFACTURER_INFO");
       setTitle("");
       setContent("");
@@ -82,91 +84,45 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-      <h2 className="text-white font-semibold text-base mb-4">Add Evidence</h2>
+    <div className="glass rounded-2xl p-6">
+      <h2 className="text-gray-900 font-semibold text-base mb-4">Add Evidence</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Type */}
         <div>
-          <label htmlFor="evidence-type" className="block text-gray-300 text-sm font-medium mb-1">
+          <label htmlFor="evidence-type" className="block text-gray-600 text-sm font-medium mb-1.5">
             Type
           </label>
-          <select
-            id="evidence-type"
-            value={type}
-            onChange={(e) => setType(e.target.value as EvidenceType)}
-            className="w-full bg-gray-900 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-          >
+          <select id="evidence-type" value={type} onChange={(e) => setType(e.target.value as EvidenceType)} className={inputClasses}>
             {EVIDENCE_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Title */}
         <div>
-          <label htmlFor="evidence-title" className="block text-gray-300 text-sm font-medium mb-1">
-            Title
-          </label>
-          <input
-            id="evidence-title"
-            type="text"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 text-white placeholder-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-            placeholder="Brief description of evidence"
-          />
+          <label htmlFor="evidence-title" className="block text-gray-600 text-sm font-medium mb-1.5">Title</label>
+          <input id="evidence-title" type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className={inputClasses} placeholder="Brief description of evidence" />
         </div>
 
-        {/* Content */}
         <div>
-          <label htmlFor="evidence-content" className="block text-gray-300 text-sm font-medium mb-1">
-            Content
-          </label>
-          <textarea
-            id="evidence-content"
-            required
-            rows={4}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 text-white placeholder-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 resize-vertical"
-            placeholder="Describe your evidence in detail..."
-          />
+          <label htmlFor="evidence-content" className="block text-gray-600 text-sm font-medium mb-1.5">Content</label>
+          <textarea id="evidence-content" required rows={4} value={content} onChange={(e) => setContent(e.target.value)} className={`${inputClasses} resize-vertical`} placeholder="Describe your evidence in detail..." />
         </div>
 
-        {/* URL */}
         <div>
-          <label htmlFor="evidence-url" className="block text-gray-300 text-sm font-medium mb-1">
-            URL <span className="text-gray-500 font-normal">(optional)</span>
+          <label htmlFor="evidence-url" className="block text-gray-600 text-sm font-medium mb-1.5">
+            URL <span className="text-gray-400 font-normal">(optional)</span>
           </label>
-          <input
-            id="evidence-url"
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 text-white placeholder-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-            placeholder="Link to source, video, etc."
-          />
+          <input id="evidence-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} className={inputClasses} placeholder="Link to source, video, etc." />
         </div>
 
-        {/* Messages */}
-        {successMessage && (
-          <p className="text-emerald-400 text-sm font-medium">{successMessage}</p>
-        )}
-        {errorMessage && (
-          <p className="text-red-400 text-sm" role="alert">
-            {errorMessage}
-          </p>
-        )}
+        {successMessage && <p className="text-emerald-700 text-sm font-medium">{successMessage}</p>}
+        {errorMessage && <p className="text-red-600 text-sm" role="alert">{errorMessage}</p>}
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
+          className="w-full bg-gradient-to-b from-[#0d1b4a] to-[#162d6b] disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition-all duration-200 hover:shadow-md hover:brightness-110"
         >
           {isSubmitting ? "Submitting..." : "Submit Evidence"}
         </button>
