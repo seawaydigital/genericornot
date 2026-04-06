@@ -30,9 +30,9 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
             <Link
               key={category.id}
               href={`/categories/${category.slug}`}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col items-center gap-3 hover:border-gray-700 transition-colors cursor-pointer"
+              className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col items-center gap-3 hover:border-gray-700 hover:scale-105 transition-all duration-200 cursor-pointer"
             >
-              <span className="text-3xl" role="img" aria-label={category.name}>
+              <span className="text-5xl" role="img" aria-label={category.name}>
                 {category.icon}
               </span>
               <span className="text-white font-medium text-sm text-center leading-snug">

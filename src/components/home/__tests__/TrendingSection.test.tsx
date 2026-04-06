@@ -30,9 +30,9 @@ const comparisons = [
 ];
 
 describe("TrendingSection", () => {
-  it("renders the section heading", () => {
+  it("renders the section heading as Popular Products", () => {
     render(<TrendingSection comparisons={comparisons} />);
-    expect(screen.getByRole("heading", { name: /trending comparisons/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /popular products/i })).toBeInTheDocument();
   });
 
   it("renders the View all link", () => {
@@ -42,11 +42,11 @@ describe("TrendingSection", () => {
     expect(link).toHaveAttribute("href", "/categories");
   });
 
-  it("renders ComparisonCards for each comparison", () => {
+  it("renders ProductCards for each comparison with brand name", () => {
     render(<TrendingSection comparisons={comparisons} />);
-    expect(screen.getByText(/Generic A vs Brand A/)).toBeInTheDocument();
-    expect(screen.getByText(/Generic B vs Brand B/)).toBeInTheDocument();
-    expect(screen.getByText(/Generic C vs Brand C/)).toBeInTheDocument();
+    expect(screen.getByText("Brand A")).toBeInTheDocument();
+    expect(screen.getByText("Brand B")).toBeInTheDocument();
+    expect(screen.getByText("Brand C")).toBeInTheDocument();
   });
 
   it("shows at most 6 comparisons", () => {

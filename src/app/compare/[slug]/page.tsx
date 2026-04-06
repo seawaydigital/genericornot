@@ -5,15 +5,13 @@ import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 import { computeSavings } from "@/lib/verdict";
 import { getComparisonMetadata, getComparisonJsonLd } from "@/lib/seo";
-import { VerdictBadge } from "@/components/comparison/VerdictBadge";
-import { ProductSideBySide } from "@/components/comparison/ProductSideBySide";
+import { BrandHero } from "@/components/comparison/BrandHero";
+import { GenericAlternative } from "@/components/comparison/GenericAlternative";
 import { QuickFacts } from "@/components/comparison/QuickFacts";
 import { EvidenceList } from "@/components/comparison/EvidenceList";
 import { VoteButtons } from "@/components/comparison/VoteButtons";
 import { VoteBreakdown } from "@/components/comparison/VoteBreakdown";
 import { EvidenceForm } from "@/components/comparison/EvidenceForm";
-import { FreshnessIndicator } from "@/components/comparison/FreshnessIndicator";
-import { FlagOutdatedButton } from "@/components/comparison/FlagOutdatedButton";
 
 export const revalidate = 60;
 
@@ -141,76 +139,49 @@ export default async function ComparisonPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mx-auto max-w-3xl px-4 md:px-6 py-10 space-y-8">
-        {/* Verdict banner */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-white font-bold text-xl mb-3">
-                {comparison.genericProductName}{" "}
-                <span className="text-gray-500 font-normal">vs</span>{" "}
-                {comparison.nameBrandProductName}
-              </h1>
-              <div className="flex flex-wrap items-center gap-3">
-                <VerdictBadge verdict={comparison.verdict} size="md" />
-                <span className="text-gray-400 text-sm">
-                  {comparison.confidenceScore}% confidence
-                </span>
-                <span className="text-gray-500 text-sm">
-                  {comparison.totalVotes} vote{comparison.totalVotes !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-            {savings !== null && savings > 0 && (
-              <div className="flex flex-col items-end">
-                <span className="text-emerald-400 text-3xl font-extrabold">
-                  Save {savings}%
-                </span>
-                <span className="text-gray-500 text-xs mt-0.5">vs name brand</span>
-              </div>
-            )}
-          </div>
+        {/* Brand hero */}
+        <BrandHero
+          nameBrandProductName={comparison.nameBrandProductName}
+          nameBrand={comparison.nameBrand}
+          nameBrandPrice={nameBrandPrice}
+          verdict={comparison.verdict}
+          confidenceScore={comparison.confidenceScore}
+          totalVotes={comparison.totalVotes}
+          savings={savings}
+          categoryIcon={comparison.category?.icon ?? "📦"}
+          lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
+          flaggedOutdated={comparison.flaggedOutdated}
+          slug={comparison.slug}
+        />
 
-          {/* Freshness + flag */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <FreshnessIndicator
-              lastVerifiedAt={comparison.lastVerifiedAt ?? null}
-              flaggedOutdated={comparison.flaggedOutdated}
-            />
-            <FlagOutdatedButton slug={comparison.slug} />
-          </div>
-
-          {/* Vote breakdown */}
-          {comparison.totalVotes > 0 && (
-            <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="bg-emerald-500/10 rounded-lg p-2">
-                <p className="text-emerald-400 font-semibold text-sm">{voteCounts.sameQuality}</p>
-                <p className="text-gray-500 mt-0.5">Same Quality</p>
-              </div>
-              <div className="bg-amber-500/10 rounded-lg p-2">
-                <p className="text-amber-400 font-semibold text-sm">{voteCounts.closeEnough}</p>
-                <p className="text-gray-500 mt-0.5">Close Enough</p>
-              </div>
-              <div className="bg-red-500/10 rounded-lg p-2">
-                <p className="text-red-400 font-semibold text-sm">{voteCounts.notWorthIt}</p>
-                <p className="text-gray-500 mt-0.5">Not Worth It</p>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Products side by side */}
+        {/* Generic alternative */}
         <section>
-          <ProductSideBySide
+          <GenericAlternative
             genericProductName={comparison.genericProductName}
             genericBrand={comparison.genericBrand}
             genericStore={comparison.genericStore}
             genericPrice={genericPrice}
-            nameBrandProductName={comparison.nameBrandProductName}
-            nameBrand={comparison.nameBrand}
-            nameBrandPrice={nameBrandPrice}
             categoryIcon={comparison.category?.icon ?? "📦"}
           />
         </section>
+
+        {/* Vote breakdown */}
+        {comparison.totalVotes > 0 && (
+          <section className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="bg-emerald-500/10 rounded-lg p-2">
+              <p className="text-emerald-400 font-semibold text-sm">{voteCounts.sameQuality}</p>
+              <p className="text-gray-500 mt-0.5">Same Quality</p>
+            </div>
+            <div className="bg-amber-500/10 rounded-lg p-2">
+              <p className="text-amber-400 font-semibold text-sm">{voteCounts.closeEnough}</p>
+              <p className="text-gray-500 mt-0.5">Close Enough</p>
+            </div>
+            <div className="bg-red-500/10 rounded-lg p-2">
+              <p className="text-red-400 font-semibold text-sm">{voteCounts.notWorthIt}</p>
+              <p className="text-gray-500 mt-0.5">Not Worth It</p>
+            </div>
+          </section>
+        )}
 
         {/* Quick facts */}
         <section>

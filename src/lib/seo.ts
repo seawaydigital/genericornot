@@ -26,7 +26,7 @@ interface CategoryForSeo {
 const BASE_URL = "https://genericornot.com";
 
 export function getComparisonMetadata(comparison: ComparisonForSeo): Metadata {
-  const title = `${comparison.genericBrand} ${comparison.genericProductName} vs ${comparison.nameBrand} ${comparison.nameBrandProductName} — GenericOrNot`;
+  const title = `${comparison.nameBrand} ${comparison.nameBrandProductName} — Generic Alternative | GenericOrNot`;
   const description = `Is ${comparison.genericBrand} ${comparison.genericProductName} (${comparison.genericStore}) the same quality as ${comparison.nameBrand} ${comparison.nameBrandProductName}? Community verdict: ${formatVerdict(comparison.verdict)} with ${comparison.totalVotes} vote${comparison.totalVotes !== 1 ? "s" : ""}.`;
   const url = `${BASE_URL}/compare/${comparison.slug}`;
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ComparisonCard } from "@/components/comparison/ComparisonCard";
+import { ProductCard } from "@/components/comparison/ProductCard";
 
 interface TrendingComparison {
   id: string;
@@ -34,7 +34,7 @@ export function TrendingSection({ comparisons }: TrendingSectionProps) {
           id="trending-heading"
           className="text-2xl font-bold text-white"
         >
-          🔥 Trending Comparisons
+          🔥 Popular Products
         </h2>
         <Link
           href="/categories"
@@ -49,7 +49,7 @@ export function TrendingSection({ comparisons }: TrendingSectionProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {top6.map((comparison) => (
-            <ComparisonCard
+            <ProductCard
               key={comparison.id}
               slug={comparison.slug}
               genericProductName={comparison.genericProductName}
@@ -60,7 +60,6 @@ export function TrendingSection({ comparisons }: TrendingSectionProps) {
               nameBrand={comparison.nameBrand}
               nameBrandPrice={comparison.nameBrandPrice}
               verdict={comparison.verdict}
-              confidenceScore={comparison.confidenceScore}
               totalVotes={comparison.totalVotes}
               category={comparison.category}
             />

@@ -3,6 +3,7 @@ import { SearchBar } from "@/components/layout/SearchBar";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { CategoryGrid } from "@/components/category/CategoryGrid";
 import { RecentActivity } from "@/components/home/RecentActivity";
+import { ProductCard } from "@/components/comparison/ProductCard";
 import Link from "next/link";
 
 export const revalidate = 120;
@@ -90,6 +91,35 @@ async function getRecentEvidence() {
   }
 }
 
+async function getRecentlyVerified() {
+  try {
+    const rows = await prisma.productComparison.findMany({
+      where: { status: "APPROVED", lastVerifiedAt: { not: null } },
+      orderBy: { lastVerifiedAt: "desc" },
+      take: 4,
+      include: { category: true },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      genericProductName: r.genericProductName,
+      genericBrand: r.genericBrand,
+      genericStore: r.genericStore,
+      genericPrice: r.genericPrice ? Number(r.genericPrice) : null,
+      nameBrandProductName: r.nameBrandProductName,
+      nameBrand: r.nameBrand,
+      nameBrandPrice: r.nameBrandPrice ? Number(r.nameBrandPrice) : null,
+      verdict: r.verdict,
+      totalVotes: r.totalVotes,
+      category: r.category
+        ? { name: r.category.name, icon: r.category.icon }
+        : undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function getRecentComparisons() {
   try {
     const rows = await prisma.productComparison.findMany({
@@ -111,12 +141,13 @@ async function getRecentComparisons() {
 }
 
 export default async function Home() {
-  const [trending, categories, recentEvidence, recentComparisons] =
+  const [trending, categories, recentEvidence, recentComparisons, recentlyVerified] =
     await Promise.all([
       getTrendingComparisons(),
       getCategories(),
       getRecentEvidence(),
       getRecentComparisons(),
+      getRecentlyVerified(),
     ]);
 
   return (
@@ -168,6 +199,36 @@ export default async function Home() {
       {/* Content sections */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 pb-20 space-y-16">
         <TrendingSection comparisons={trending} />
+
+        {recentlyVerified.length > 0 && (
+          <section aria-labelledby="recently-verified-heading">
+            <h2
+              id="recently-verified-heading"
+              className="text-2xl font-bold text-white mb-6"
+            >
+              ✓ Recently Verified
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recentlyVerified.map((comparison) => (
+                <ProductCard
+                  key={comparison.id}
+                  slug={comparison.slug}
+                  genericProductName={comparison.genericProductName}
+                  genericBrand={comparison.genericBrand}
+                  genericStore={comparison.genericStore}
+                  genericPrice={comparison.genericPrice}
+                  nameBrandProductName={comparison.nameBrandProductName}
+                  nameBrand={comparison.nameBrand}
+                  nameBrandPrice={comparison.nameBrandPrice}
+                  verdict={comparison.verdict}
+                  totalVotes={comparison.totalVotes}
+                  category={comparison.category}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         <CategoryGrid categories={categories} />
         <RecentActivity evidence={recentEvidence} comparisons={recentComparisons} />
       </div>

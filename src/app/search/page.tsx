@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { searchComparisons } from "@/lib/search";
-import { ComparisonCard } from "@/components/comparison/ComparisonCard";
+import { ProductCard } from "@/components/comparison/ProductCard";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +54,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
       {results.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {results.map((comparison) => (
-            <ComparisonCard
+            <ProductCard
               key={comparison.id}
               slug={comparison.slug}
               genericProductName={comparison.genericProductName}
@@ -71,7 +71,6 @@ export default async function SearchPage({ searchParams }: PageProps) {
                   : null
               }
               verdict={comparison.verdict}
-              confidenceScore={comparison.confidenceScore}
               totalVotes={comparison.totalVotes}
               category={
                 comparison.category

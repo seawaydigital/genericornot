@@ -17,16 +17,15 @@ const baseComparison = {
 };
 
 describe("getComparisonMetadata", () => {
-  it("includes both product names in title", () => {
+  it("leads with name brand product name in title", () => {
     const meta = getComparisonMetadata(baseComparison);
-    expect(meta.title).toContain("Ibuprofen");
     expect(meta.title).toContain("Advil");
+    expect(meta.title).toContain("Pfizer");
   });
 
-  it("includes brand names in title", () => {
+  it("mentions 'Generic Alternative' in title", () => {
     const meta = getComparisonMetadata(baseComparison);
-    expect(meta.title).toContain("Kirkland");
-    expect(meta.title).toContain("Pfizer");
+    expect(meta.title).toContain("Generic Alternative");
   });
 
   it("includes site name in title", () => {

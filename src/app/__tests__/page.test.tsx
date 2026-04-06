@@ -62,7 +62,7 @@ describe("Homepage", () => {
   it("renders trending section heading", async () => {
     const jsx = await Home();
     render(jsx);
-    expect(screen.getByRole("heading", { name: /trending comparisons/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /popular products/i })).toBeInTheDocument();
   });
 
   it("renders categories section heading", async () => {

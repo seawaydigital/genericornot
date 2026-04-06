@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { CategoryFilter } from "@/components/category/CategoryFilter";
-import { ComparisonCard } from "@/components/comparison/ComparisonCard";
+import { ProductCard } from "@/components/comparison/ProductCard";
 import Link from "next/link";
 
 export const revalidate = 300;
@@ -173,7 +173,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {comparisons.map((comparison) => (
-              <ComparisonCard key={comparison.id} {...comparison} />
+              <ProductCard key={comparison.id} slug={comparison.slug} genericProductName={comparison.genericProductName} genericBrand={comparison.genericBrand} genericStore={comparison.genericStore} genericPrice={comparison.genericPrice} nameBrandProductName={comparison.nameBrandProductName} nameBrand={comparison.nameBrand} nameBrandPrice={comparison.nameBrandPrice} verdict={comparison.verdict} totalVotes={comparison.totalVotes} category={comparison.category} />
             ))}
           </div>
         )}
