@@ -1,5 +1,10 @@
+import Image from "next/image";
+import { getBrandLogoUrl } from "@/lib/brand-logos";
+
 interface ProductIconProps {
   icon?: string;
+  imageUrl?: string;
+  brandName?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -10,12 +15,38 @@ const sizeClasses = {
   lg: "w-[120px] h-[120px] text-5xl",
 };
 
-export function ProductIcon({ icon = "📦", size = "md", className = "" }: ProductIconProps) {
+const sizePx = {
+  sm: 48,
+  md: 80,
+  lg: 120,
+};
+
+export function ProductIcon({
+  icon = "📦",
+  imageUrl,
+  brandName,
+  size = "md",
+  className = "",
+}: ProductIconProps) {
+  // Resolve logo URL: explicit imageUrl wins, then brandName lookup, then null
+  const logoUrl = imageUrl ?? (brandName ? getBrandLogoUrl(brandName, sizePx[size] * 2) : null);
+
   return (
     <div
       className={`flex items-center justify-center rounded-xl bg-gray-800/50 border border-gray-700/50 ${sizeClasses[size]} ${className}`}
     >
-      <span role="img">{icon}</span>
+      {logoUrl ? (
+        <Image
+          src={logoUrl}
+          alt={brandName ?? "brand logo"}
+          width={sizePx[size]}
+          height={sizePx[size]}
+          className="object-contain rounded-lg"
+          unoptimized
+        />
+      ) : (
+        <span role="img">{icon}</span>
+      )}
     </div>
   );
 }

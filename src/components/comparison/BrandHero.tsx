@@ -34,7 +34,7 @@ export function BrandHero({
     <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
       <div className="flex flex-col sm:flex-row items-start gap-5">
         {/* Product icon */}
-        <ProductIcon icon={categoryIcon} size="lg" className="shrink-0 mx-auto sm:mx-0" />
+        <ProductIcon icon={categoryIcon} brandName={nameBrand} size="lg" className="shrink-0 mx-auto sm:mx-0" />
 
         {/* Brand info */}
         <div className="flex-1 min-w-0">

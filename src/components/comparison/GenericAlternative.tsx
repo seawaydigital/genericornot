@@ -21,7 +21,7 @@ export function GenericAlternative({
         Generic Alternative
       </p>
       <div className="flex items-center gap-4">
-        <ProductIcon icon={categoryIcon} size="sm" className="shrink-0" />
+        <ProductIcon icon={categoryIcon} brandName={genericBrand} size="sm" className="shrink-0" />
         <div>
           <p className="text-white font-semibold leading-snug">{genericProductName}</p>
           <p className="text-gray-400 text-sm mt-0.5">{genericBrand}</p>
