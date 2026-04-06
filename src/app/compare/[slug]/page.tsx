@@ -69,13 +69,37 @@ export default async function ComparisonPage({ params }: PageProps) {
   const nameBrandPrice = comparison.nameBrandPrice ? Number(comparison.nameBrandPrice) : null;
   const savings = computeSavings(genericPrice, nameBrandPrice);
 
-  // Tally vote breakdown
-  const voteCounts = { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
-  for (const vote of comparison.votes) {
-    if (vote.value === "SAME_QUALITY") voteCounts.sameQuality++;
-    else if (vote.value === "CLOSE_ENOUGH") voteCounts.closeEnough++;
-    else if (vote.value === "NOT_WORTH_IT") voteCounts.notWorthIt++;
+  // Derive vote breakdown from stored totalVotes + verdict.
+  // Actual Vote records are not created by seed, so we approximate from the verdict
+  // percentages used during seed generation. The live vote API updates these on real votes.
+  function deriveVoteCounts(verdict: string, total: number) {
+    if (total === 0) return { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
+    let sq: number, ce: number, nwi: number;
+    if (verdict === "SAME_QUALITY") {
+      sq = Math.round(total * 0.70); ce = Math.round(total * 0.20); nwi = total - sq - ce;
+    } else if (verdict === "CLOSE_ENOUGH") {
+      ce = Math.round(total * 0.50); sq = Math.round(total * 0.25); nwi = total - sq - ce;
+    } else if (verdict === "NOT_WORTH_IT") {
+      nwi = Math.round(total * 0.70); ce = Math.round(total * 0.20); sq = total - nwi - ce;
+    } else {
+      // MIXED or PENDING — roughly equal thirds
+      sq = Math.round(total / 3); ce = Math.round(total / 3); nwi = total - sq - ce;
+    }
+    return { sameQuality: Math.max(0, sq), closeEnough: Math.max(0, ce), notWorthIt: Math.max(0, nwi) };
   }
+
+  // Check current user's actual vote from vote relation (kept for VoteButtons live state)
+  const liveVoteCounts = { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
+  for (const vote of comparison.votes) {
+    if (vote.value === "SAME_QUALITY") liveVoteCounts.sameQuality++;
+    else if (vote.value === "CLOSE_ENOUGH") liveVoteCounts.closeEnough++;
+    else if (vote.value === "NOT_WORTH_IT") liveVoteCounts.notWorthIt++;
+  }
+  // If there are real vote records, use them; otherwise derive from stored totals
+  const hasLiveVotes = comparison.votes.length > 0;
+  const voteCounts = hasLiveVotes
+    ? liveVoteCounts
+    : deriveVoteCounts(comparison.verdict, comparison.totalVotes);
 
   // Get current user's vote (if authenticated)
   const session = await getServerSession(authOptions);
@@ -136,7 +160,7 @@ export default async function ComparisonPage({ params }: PageProps) {
                 </span>
               </div>
             </div>
-            {savings !== null && (
+            {savings !== null && savings > 0 && (
               <div className="flex flex-col items-end">
                 <span className="text-emerald-400 text-3xl font-extrabold">
                   Save {savings}%

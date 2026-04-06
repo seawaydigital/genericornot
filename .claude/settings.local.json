@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "WebSearch",
+      "Bash(node -e \":*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx prisma:*)",
+      "WebFetch(domain:instantdomainsearch.com)",
+      "WebFetch(domain:genericornot.com)",
+      "WebFetch(domain:dupeordud.com)",
+      "WebFetch(domain:brandvsgeneric.com)",
+      "WebFetch(domain:offbrandcheck.com)",
+      "WebFetch(domain:genericverdict.com)",
+      "WebFetch(domain:smartswap.com)",
+      "WebFetch(domain:shelfmatch.com)",
+      "WebFetch(domain:isitthesame.com)",
+      "WebFetch(domain:genericguide.com)",
+      "WebFetch(domain:branddropper.com)",
+      "WebFetch(domain:lookup.icann.org)",
+      "Bash(for domain:*)",
+      "Bash(do echo:*)",
+      "Bash(nslookup $domain)",
+      "Bash(done)",
+      "Bash(pdftotext \"C:/Users/ajaustin/Downloads/GenericOrNot_Name_Rankings-Gemini3.1Pro\" -)",
+      "WebFetch(domain:www.brandworthy.com)",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"console.log\\(require\\(''crypto''\\).randomBytes\\(32\\).toString\\(''hex''\\)\\)\")",
+      "Bash(npm run:*)",
+      "Bash(npx vercel:*)",
+      "Bash(gh api:*)",
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(''''/dev/stdin'''',''''utf8''''\\);const p=JSON.parse\\(d\\);console.log\\(''''types:'''',p.types||p.typings||''''none''''\\);console.log\\(''''exports:'''',JSON.stringify\\(p.exports||{}\\).substring\\(0,200\\)\\)\")",
+      "Bash(node -e \"const p=require\\(''./node_modules/@prisma/client/package.json''\\);console.log\\(''types:'',p.types\\);console.log\\(''main:'',p.main\\)\")"
+    ]
+  }
+}

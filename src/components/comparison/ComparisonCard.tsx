@@ -39,7 +39,7 @@ export function ComparisonCard({
       {/* Top row: verdict badge + savings */}
       <div className="flex items-center justify-between gap-2">
         <VerdictBadge verdict={verdict} />
-        {savings !== null && (
+        {savings !== null && savings > 0 && (
           <span className="text-emerald-400 text-sm font-medium">
             Save {savings}%
           </span>
