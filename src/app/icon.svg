@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Border -->
+  <rect x="4" y="4" width="504" height="504" rx="92" fill="none" stroke="#34d399" stroke-width="6" opacity="0.3"/>
+  <!-- G letter -->
+  <text x="108" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="280" font-weight="800" fill="#e5e7eb">G</text>
+  <!-- Question mark / or-not indicator -->
+  <text x="300" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="280" font-weight="800" fill="url(#accent)">?</text>
+  <!-- Small "or not" text -->
+  <rect x="140" y="370" width="232" height="36" rx="18" fill="#34d399" opacity="0.15"/>
+  <text x="256" y="396" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" fill="#34d399" text-anchor="middle" letter-spacing="3">OR NOT</text>
+</svg>
