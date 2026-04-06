@@ -145,6 +145,14 @@ See `.env.example` for required variables:
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth credentials
 - `R2_*` — Cloudflare R2 credentials (Task 25)
 
+## Trust & Data Integrity (added post-review)
+
+- **Evidence confidence tiers**: CONFIRMED (FDA/manufacturer docs), COMMUNITY (multiple reports), UNVERIFIED (single report)
+- **Data freshness**: `lastVerifiedAt` timestamp on comparisons, color-coded freshness indicator (green/amber/red)
+- **Outdated flagging**: Users can flag comparisons as outdated; auto-flags at 3+ reports
+- **Vote integrity**: 1-hour account age minimum for voting to prevent brigading
+- **Editorial independence**: `/about` page with stated policy — verdicts are never influenced by sponsors
+
 ## Conventions
 
 - Tests colocated in `__tests__/` directories next to source
