@@ -44,10 +44,10 @@ describe("QuickFacts", () => {
     expect(screen.getByText(/No details yet/)).toBeInTheDocument();
   });
 
-  it("shows 'community reported' label when facts exist", () => {
-    const evidence = [{ type: "MANUFACTURER_INFO" }];
+  it("shows confidence badge label when facts exist", () => {
+    const evidence = [{ type: "MANUFACTURER_INFO", confidence: "CONFIRMED" }];
     render(<QuickFacts evidence={evidence} />);
-    expect(screen.getByText("community reported")).toBeInTheDocument();
+    expect(screen.getByText("Confirmed")).toBeInTheDocument();
   });
 
   it("does not show facts when only PHOTO or OTHER evidence exists", () => {

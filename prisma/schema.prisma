@@ -39,6 +39,12 @@ enum UserRole {
   ADMIN
 }
 
+enum EvidenceConfidence {
+  CONFIRMED
+  COMMUNITY
+  UNVERIFIED
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -121,6 +127,9 @@ model ProductComparison {
   status               ComparisonStatus @default(PENDING)
   rejectionReason      String?
   submittedById        String?
+  lastVerifiedAt       DateTime?
+  flaggedOutdated      Boolean          @default(false)
+  flagCount            Int              @default(0)
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -149,7 +158,7 @@ model Vote {
 }
 
 model Evidence {
-  id           String       @id @default(uuid())
+  id           String             @id @default(uuid())
   comparisonId String
   userId       String
   type         EvidenceType
@@ -157,7 +166,8 @@ model Evidence {
   content      String
   url          String?
   imageUrl     String?
-  createdAt    DateTime     @default(now())
+  confidence   EvidenceConfidence @default(UNVERIFIED)
+  createdAt    DateTime           @default(now())
 
   comparison ProductComparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)

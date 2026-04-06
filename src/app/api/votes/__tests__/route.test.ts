@@ -76,9 +76,16 @@ const mockVote = {
   updatedAt: new Date("2026-04-05"),
 };
 
+const mockOldUser = {
+  id: "user-1",
+  createdAt: new Date("2025-01-01"), // well over 1 hour old
+};
+
 describe("POST /api/votes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: user exists and is old enough to vote
+    prismaMock.user.findUnique.mockResolvedValue(mockOldUser as never);
   });
 
   it("returns 401 when not authenticated", async () => {

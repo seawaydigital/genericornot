@@ -44,6 +44,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Account age check: must be older than 1 hour to vote
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { createdAt: true },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  const accountAgeMs = Date.now() - new Date(user.createdAt).getTime();
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  if (accountAgeMs < ONE_HOUR_MS) {
+    return NextResponse.json(
+      { error: "New accounts must wait 1 hour before voting" },
+      { status: 403 }
+    );
+  }
+
   let data: Record<string, unknown>;
   try {
     data = await req.json();

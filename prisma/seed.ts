@@ -1,4 +1,4 @@
-import { PrismaClient, ComparisonStatus, EvidenceType, UserRole } from "@prisma/client";
+import { PrismaClient, ComparisonStatus, EvidenceType, EvidenceConfidence, UserRole } from "@prisma/client";
 import { computeVerdict } from "../src/lib/verdict";
 
 const prisma = new PrismaClient();
@@ -100,6 +100,7 @@ async function main() {
       nameBrandPrice: 3.29,
       ...makeVotes("SAME_QUALITY", 312),
       status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-02-15"),
     },
     {
       slug: "kirkland-cranberry-juice-vs-ocean-spray",
@@ -406,6 +407,7 @@ async function main() {
       nameBrandPrice: 14.99,
       ...makeVotes("SAME_QUALITY", 500),
       status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-03-01"),
     },
     {
       slug: "up-and-up-acetaminophen-vs-tylenol",
@@ -430,6 +432,7 @@ async function main() {
       nameBrandPrice: 29.99,
       ...makeVotes("SAME_QUALITY", 418),
       status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2024-12-01"), // ~16 months ago — red
     },
     {
       slug: "kirkland-diphenhydramine-vs-benadryl",
@@ -754,6 +757,7 @@ async function main() {
       nameBrandPrice: 0.35,
       ...makeVotes("SAME_QUALITY", 465),
       status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2025-07-01"), // ~9 months ago — amber
     },
     {
       slug: "parents-choice-formula-vs-similac",
@@ -1082,6 +1086,7 @@ async function main() {
       nameBrandPrice: 22.99,
       ...makeVotes("SAME_QUALITY", 478),
       status: ComparisonStatus.APPROVED,
+      lastVerifiedAt: new Date("2026-01-10"),
     },
     {
       slug: "amazon-basics-batteries-vs-duracell",
@@ -1368,6 +1373,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-tuna-vs-bumble-bee-tuna",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Confirmed same manufacturer: Bumble Bee",
       content:
         "Costco partnered with Bumble Bee to pack Kirkland tuna. Same manufacturer, firmer texture with less water than standard Bumble Bee cans. Confirmed via public sourcing information.",
@@ -1375,12 +1381,14 @@ async function main() {
     {
       comparisonSlug: "kirkland-cranberry-juice-vs-ocean-spray",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Made by Ocean Spray",
       content: "Kirkland Signature Cranberry Juice Cocktail is made by Ocean Spray. Confirmed manufacturer relationship.",
     },
     {
       comparisonSlug: "kirkland-k-cups-vs-green-mountain",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Green Mountain Coffee confirmed as manufacturer",
       content:
         "Green Mountain Coffee Roasters signed a deal with Costco in 2012 to produce Kirkland K-Cups. Same roaster and equipment. Publicly disclosed partnership.",
@@ -1388,6 +1396,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-coffee-vs-starbucks",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Custom-roasted by Starbucks for Costco",
       content:
         "Kirkland Signature Custom Roast Medium Coffee is custom-roasted by Starbucks. Publicly confirmed partnership between Starbucks and Costco.",
@@ -1395,6 +1404,7 @@ async function main() {
     {
       comparisonSlug: "great-value-mac-cheese-vs-kraft",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Kraft cheese powder flavor is proprietary",
       content:
         "Consumer consensus: no generic brand matches the distinctive Kraft cheese powder flavor. Repeatedly listed on 'never buy generic' lists. The flavor profile is from a proprietary blend that generics cannot replicate.",
@@ -1402,6 +1412,7 @@ async function main() {
     {
       comparisonSlug: "sams-choice-cola-vs-coca-cola",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Coca-Cola recipe cannot be replicated",
       content:
         "Consumer consensus is strong that generic colas never match the flavor profile of Coca-Cola. Proprietary recipe cannot be replicated. Sam's Choice made by Cott Beverages.",
@@ -1410,6 +1421,7 @@ async function main() {
     {
       comparisonSlug: "equate-ibuprofen-vs-advil",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "FDA requires identical active ingredients",
       content:
         "The FDA mandates that generic drugs have the same active ingredient, strength, dosage form, and route of administration as the brand-name drug. Equate Ibuprofen manufactured by Perrigo, the largest store-brand OTC manufacturer.",
@@ -1418,6 +1430,7 @@ async function main() {
     {
       comparisonSlug: "equate-ibuprofen-vs-advil",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Same active ingredient: ibuprofen 200mg",
       content:
         "Both contain ibuprofen 200mg (active). Inactive ingredients differ slightly (Equate uses starch, Advil uses microcrystalline cellulose) but these do not affect efficacy for most people.",
@@ -1425,6 +1438,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-allerclear-vs-claritin",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Identical loratadine 10mg formulation",
       content:
         "Kirkland Signature AllerClear contains loratadine 10mg — identical to Claritin. Patent expired; generics are legally required to be bioequivalent. Manufactured by Perrigo.",
@@ -1433,6 +1447,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-minoxidil-vs-rogaine",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Same active ingredient, FDA-approved generic",
       content:
         "Kirkland Signature Minoxidil 5% contains the same active ingredient as Rogaine Men's 5%. FDA-approved generic. Widely recommended by dermatologists as identical efficacy at roughly 1/5 the price.",
@@ -1441,6 +1456,7 @@ async function main() {
     {
       comparisonSlug: "great-value-bleach-vs-clorox",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Bleach is bleach: sodium hypochlorite in water",
       content:
         "Bleach is sodium hypochlorite in water at 6-8.25% concentration. A commodity product with identical chemistry regardless of brand. Widely cited as the textbook example of 'always buy generic.'",
@@ -1448,6 +1464,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-aluminum-foil-vs-reynolds",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Reynolds appears on Kirkland foil packaging",
       content:
         "Reynolds name appears on Kirkland Signature Foodservice Foil packaging. Same manufacturer confirmed.",
@@ -1455,6 +1472,7 @@ async function main() {
     {
       comparisonSlug: "great-value-dish-soap-vs-dawn",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Dawn's formula is proprietary and superior",
       content:
         "Consumer consensus: generic dish soaps are watery and require significantly more product per wash. Dawn's formula is proprietary and notably more effective at cutting grease. Cited on multiple 'never buy generic' lists.",
@@ -1463,6 +1481,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-diapers-vs-huggies",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Made by Kimberly-Clark (Huggies manufacturer)",
       content:
         "Confirmed by Costco CFO Richard Galanti in a 2017 Wall Street Journal interview. Kimberly-Clark, the manufacturer of Huggies, also makes Kirkland Signature Supreme Diapers.",
@@ -1470,6 +1489,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-diapers-vs-huggies",
       type: EvidenceType.VIDEO_LINK,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Side-by-side absorbency comparison",
       content:
         "Multiple YouTube tests show Kirkland diapers absorbing identically to Huggies. The SAP (superabsorbent polymer) core appears similar in composition.",
@@ -1478,6 +1498,7 @@ async function main() {
     {
       comparisonSlug: "parents-choice-formula-vs-similac",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Infant Formula Act mandates nutritional equivalence",
       content:
         "The Infant Formula Act (1980, updated 2014) requires all formulas — including store brands — to be nutritionally identical. Parent's Choice made by Perrigo, the largest store brand formula manufacturer. FDA regulated to identical standards.",
@@ -1486,6 +1507,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-contact-lenses-vs-coopervision",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Made by CooperVision",
       content:
         "Kirkland Signature Daily Contact Lenses are made by CooperVision, one of the top contact lens manufacturers in the world. Confirmed manufacturer relationship.",
@@ -1493,6 +1515,7 @@ async function main() {
     {
       comparisonSlug: "equate-bandages-vs-band-aid",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Adhesive quality is noticeably inferior",
       content:
         "Consumer consensus: generic bandages don't stick as well and fall off more easily, especially when wet. Band-Aid's adhesive is noticeably superior and stays on longer. Consistently appears on 'never buy generic' lists.",
@@ -1501,6 +1524,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-dog-food-vs-diamond-naturals",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Made by Diamond Pet Foods",
       content:
         "Diamond Pet Foods is the confirmed manufacturer of all Kirkland Signature dry pet foods. Same factory and similar formulations as Diamond Naturals.",
@@ -1508,6 +1532,7 @@ async function main() {
     {
       comparisonSlug: "petarmor-plus-vs-frontline-plus",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Same active ingredients after patent expiry",
       content:
         "PetArmor Plus contains the same active ingredients as Frontline Plus: fipronil and (S)-methoprene at identical concentrations. Generic became available after Frontline's patent expired. EPA-registered.",
@@ -1515,6 +1540,7 @@ async function main() {
     {
       comparisonSlug: "ol-roy-dog-food-vs-purina-one",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Low-quality ingredients: corn and by-products",
       content:
         "Ol' Roy consistently rated among the lowest quality dog foods. Primary ingredients are corn and meat by-products rather than named protein sources. Veterinary nutritionists advise against cheapest-tier pet foods.",
@@ -1523,6 +1549,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-batteries-vs-duracell",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Manufactured by Duracell",
       content:
         "Kirkland Signature AA batteries are manufactured by Duracell. Confirmed manufacturer relationship. Performance tests show nearly identical run times across high-drain devices.",
@@ -1531,6 +1558,7 @@ async function main() {
     {
       comparisonSlug: "amazon-basics-hdmi-vs-monster",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "HDMI is a digital standard — cables are interchangeable",
       content:
         "HDMI is a digital standard. The cable either transmits the signal or it doesn't. No quality difference in digital transmission at the same spec. Premium cables are widely considered one of the biggest consumer electronics markups.",
@@ -1539,6 +1567,7 @@ async function main() {
     {
       comparisonSlug: "kirkland-mattress-vs-stearns-foster",
       type: EvidenceType.MANUFACTURER_INFO,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "Made by Stearns & Foster",
       content:
         "The Kirkland Signature mattress is confirmed to be made by Stearns & Foster. Different model specs than the S&F retail line but same manufacturer, materials, and construction expertise at a fraction of the price.",
@@ -1546,6 +1575,7 @@ async function main() {
     {
       comparisonSlug: "great-value-trash-bags-vs-glad",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.COMMUNITY,
       title: "Generic bags tear when lifting heavy loads",
       content:
         "Consumer consensus: generic trash bags tear more easily when lifting from bin, especially when heavy. Glad ForceFlex's stretchable material is notably stronger. Cited on multiple 'never buy generic' lists.",
@@ -1553,6 +1583,7 @@ async function main() {
     {
       comparisonSlug: "great-value-air-filters-vs-filtrete",
       type: EvidenceType.INGREDIENT_COMPARISON,
+      confidence: EvidenceConfidence.CONFIRMED,
       title: "MERV rating difference is significant",
       content:
         "MERV 8 (generic) vs MERV 12 (Filtrete) is a meaningful difference. Higher MERV filters capture more particles per cubic foot of air. For allergy sufferers or air quality sensitive households, Filtrete provides meaningfully better filtration.",
@@ -1570,6 +1601,7 @@ async function main() {
           title: entry.title,
           content: entry.content,
           url: "url" in entry ? entry.url : undefined,
+          confidence: "confidence" in entry ? entry.confidence as EvidenceConfidence : EvidenceConfidence.UNVERIFIED,
         },
       });
     }

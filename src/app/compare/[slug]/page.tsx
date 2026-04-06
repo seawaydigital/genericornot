@@ -12,6 +12,8 @@ import { EvidenceList } from "@/components/comparison/EvidenceList";
 import { VoteButtons } from "@/components/comparison/VoteButtons";
 import { VoteBreakdown } from "@/components/comparison/VoteBreakdown";
 import { EvidenceForm } from "@/components/comparison/EvidenceForm";
+import { FreshnessIndicator } from "@/components/comparison/FreshnessIndicator";
+import { FlagOutdatedButton } from "@/components/comparison/FlagOutdatedButton";
 
 export const revalidate = 60;
 
@@ -97,6 +99,7 @@ export default async function ComparisonPage({ params }: PageProps) {
     title: e.title,
     content: e.content,
     url: e.url ?? null,
+    confidence: e.confidence,
     createdAt: e.createdAt,
     user: { username: e.user.username },
   }));
@@ -141,6 +144,15 @@ export default async function ComparisonPage({ params }: PageProps) {
                 <span className="text-gray-500 text-xs mt-0.5">vs name brand</span>
               </div>
             )}
+          </div>
+
+          {/* Freshness + flag */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <FreshnessIndicator
+              lastVerifiedAt={comparison.lastVerifiedAt ?? null}
+              flaggedOutdated={comparison.flaggedOutdated}
+            />
+            <FlagOutdatedButton slug={comparison.slug} />
           </div>
 
           {/* Vote breakdown */}

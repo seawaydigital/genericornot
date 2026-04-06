@@ -12,6 +12,7 @@ interface Evidence {
   title: string;
   content: string;
   url?: string | null;
+  confidence?: string | null;
   createdAt: Date | string;
   user: EvidenceUser;
 }
@@ -45,6 +46,21 @@ const evidenceTypeConfig: Record<string, { label: string; color: string }> = {
 
 const fallbackType = { label: "Evidence", color: "bg-gray-500/10 text-gray-400 border-gray-500/20" };
 
+const confidenceConfig: Record<string, { label: string; color: string }> = {
+  CONFIRMED: {
+    label: "✓ Confirmed",
+    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  },
+  COMMUNITY: {
+    label: "Community Reported",
+    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  },
+  UNVERIFIED: {
+    label: "Unverified",
+    color: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+  },
+};
+
 function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
@@ -74,6 +90,8 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
       <div className="flex flex-col gap-4">
         {visible.map((entry) => {
           const typeConfig = evidenceTypeConfig[entry.type] ?? fallbackType;
+          const confKey = entry.confidence ?? "UNVERIFIED";
+          const conf = confidenceConfig[confKey] ?? confidenceConfig.UNVERIFIED;
           return (
             <div key={entry.id} className="border-b border-gray-800 last:border-0 pb-4 last:pb-0">
               <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -81,6 +99,11 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeConfig.color}`}
                 >
                   {typeConfig.label}
+                </span>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${conf.color}`}
+                >
+                  {conf.label}
                 </span>
                 <span className="text-gray-500 text-xs">
                   by{" "}
