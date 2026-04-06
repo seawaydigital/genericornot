@@ -40,7 +40,7 @@ export default async function AdminPage() {
   const pending = await getPendingComparisons();
 
   // Serialize for client component (Decimal -> null-safe number)
-  const comparisons = pending.map((c) => ({
+  const comparisons = pending.map((c: any) => ({
     id: c.id,
     genericProductName: c.genericProductName,
     genericBrand: c.genericBrand,
