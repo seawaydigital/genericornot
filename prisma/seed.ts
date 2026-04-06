@@ -1,7 +1,10 @@
+import "dotenv/config";
 import { PrismaClient, ComparisonStatus, EvidenceType, EvidenceConfidence, UserRole } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { computeVerdict } from "../src/lib/verdict";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 // Generate vote distributions that produce the target verdict.
 // SAME_QUALITY: ~70% same, 20% close, 10% not
