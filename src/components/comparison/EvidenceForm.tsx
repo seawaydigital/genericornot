@@ -42,7 +42,7 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
       <div className="glass rounded-2xl p-6">
         <h2 className="text-gray-900 font-semibold text-base mb-3">Add Evidence</h2>
         <p className="text-gray-500 text-sm">
-          <a href="/api/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
+          <a href="/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
             Sign in to contribute evidence
           </a>{" "}
           on this comparison.

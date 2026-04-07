@@ -1,7 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { AdapterUser } from "next-auth/adapters";
+import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 
 function generateUsername(name: string): string {
@@ -23,7 +25,7 @@ export const authOptions: NextAuthOptions = {
       const user = await prisma.user.create({
         data: {
           email: data.email,
-          name: data.name ?? "",
+          name: data.name ?? data.email.split("@")[0],
           image: data.image,
           username,
         },
@@ -36,12 +38,55 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    EmailProvider({
+      server: {
+        host: "smtp.resend.com",
+        port: 465,
+        auth: {
+          user: "resend",
+          pass: process.env.RESEND_API_KEY!,
+        },
+      },
+      from: process.env.EMAIL_FROM ?? "GenericOrNot <noreply@genericornot.com>",
+      async sendVerificationRequest({ identifier: email, url }) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM ?? "GenericOrNot <noreply@genericornot.com>",
+          to: email,
+          subject: "Sign in to GenericOrNot",
+          html: `
+            <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px 20px;">
+              <h1 style="font-size: 24px; font-weight: 700; color: #0d1b4a; margin: 0 0 8px;">
+                Generic<em style="font-style: italic;"> Or </em>Not
+              </h1>
+              <p style="color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 32px;">
+                The editorial truth in consumer advocacy
+              </p>
+              <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+                Click the button below to sign in to your account. This link expires in 24 hours.
+              </p>
+              <a href="${url}" style="display: inline-block; background: linear-gradient(to bottom, #0d1b4a, #162d6b); color: white; text-decoration: none; padding: 12px 32px; border-radius: 12px; font-weight: 600; font-size: 14px;">
+                Sign in to GenericOrNot
+              </a>
+              <p style="color: #9ca3af; font-size: 13px; line-height: 1.5; margin: 32px 0 0;">
+                If you didn&rsquo;t request this email, you can safely ignore it.
+              </p>
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+              <p style="color: #d1d5db; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+                genericornot.com &middot; Transparency is our only product.
+              </p>
+            </div>
+          `,
+        });
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
   },
   pages: {
-    signIn: "/",
+    signIn: "/auth/signin",
+    verifyRequest: "/auth/verify",
   },
   callbacks: {
     async jwt({ token, user }) {

@@ -66,7 +66,7 @@ export function VoteButtons({
     return (
       <div className="glass rounded-2xl p-5 text-center">
         <p className="text-gray-500 text-sm">
-          <a href="/api/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
+          <a href="/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
             Sign in to vote
           </a>{" "}
           on this comparison.

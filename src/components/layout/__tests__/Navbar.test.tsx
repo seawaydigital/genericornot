@@ -48,10 +48,11 @@ describe("Navbar", () => {
     expect(link).toHaveAttribute("href", "/about");
   });
 
-  it("renders Sign In button when not authenticated", () => {
+  it("renders Sign In link when not authenticated", () => {
     render(<Navbar />);
-    const signInButtons = screen.getAllByRole("button", { name: /sign in/i });
-    expect(signInButtons.length).toBeGreaterThan(0);
+    const signInLinks = screen.getAllByRole("link", { name: /sign in/i });
+    expect(signInLinks.length).toBeGreaterThan(0);
+    expect(signInLinks[0]).toHaveAttribute("href", "/auth/signin");
   });
 
   it("renders Contribute link", () => {

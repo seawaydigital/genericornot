@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,12 +75,12 @@ export function Navbar() {
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => signIn("google")}
+              <Link
+                href="/auth/signin"
                 className="rounded-xl bg-[#0d1b4a] px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[#162d6b]"
               >
                 Sign In
-              </button>
+              </Link>
             )}
           </div>
 
@@ -125,12 +125,13 @@ export function Navbar() {
                 Sign Out
               </button>
             ) : (
-              <button
-                onClick={() => { signIn("google"); setMobileOpen(false); }}
-                className="rounded-xl bg-[#0d1b4a] px-4 py-2 text-sm font-medium text-white"
+              <Link
+                href="/auth/signin"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl bg-[#0d1b4a] px-4 py-2 text-center text-sm font-medium text-white"
               >
                 Sign In
-              </button>
+              </Link>
             )}
           </div>
         </div>
