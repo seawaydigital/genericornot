@@ -26,6 +26,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${dmSans.variable} ${instrumentSerif.variable}`}>
+      <head>
+        <meta name="fo-verify" content="6edb09d7-6a97-47ca-aa4d-962648e63384" />
+      </head>
       <body className={`${dmSans.className} bg-[#fafaf8] text-[#1a1a2e] min-h-screen flex flex-col antialiased`}>
         <Providers>
           <Navbar />
