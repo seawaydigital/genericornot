@@ -13,19 +13,25 @@ Community-driven website where users look up, vote on, and contribute evidence a
 - **Framework:** Next.js 16.2.2 (App Router) with TypeScript
 - **Database:** Neon PostgreSQL (serverless, free tier, project "GenericOrNot", US East 2 Ohio)
 - **ORM:** Prisma v7 (uses `@prisma/adapter-neon` driver adapter, config in `prisma.config.ts`)
-- **Auth:** NextAuth.js v4 with Google OAuth + @auth/prisma-adapter v2
+- **Auth:** NextAuth.js v4 with Google OAuth + Email Magic Link (Resend) + @auth/prisma-adapter v2
 - **Styling:** Tailwind CSS v4
 - **Image Storage:** Cloudflare R2 (S3-compatible, zero egress) — configured but not yet active
 - **Brand Logos:** logo.dev API (free tier 500K req/month, token in `NEXT_PUBLIC_LOGO_DEV_TOKEN`)
+- **Email:** Resend API for magic link emails (free tier 3K/month) — may switch to Google Workspace SMTP
 - **Hosting:** Vercel (auto-deploys from GitHub master branch)
 - **Testing:** Vitest 4.1.2 + React Testing Library + happy-dom (349 tests passing)
-- **Search:** Prisma contains queries (v1); PostgreSQL full-text search migration ready at `prisma/search_vector_migration_backup/`
+- **Search:** Prisma contains queries with fallback; PostgreSQL full-text search (tsvector + trigram) ready via migration script
 
-## Key Documents
+## Visual Design
 
-- **Design spec:** `docs/superpowers/specs/2026-04-04-generic-or-not-design.md`
-- **Implementation plan:** `docs/superpowers/plans/2026-04-04-generic-or-not.md`
-- **UI redesign plan:** `.claude/plans/warm-tinkering-mountain.md`
+**Light editorial theme** inspired by Stripe/Apple aesthetics:
+- **Background:** Warm off-white (`#fafaf8`)
+- **Primary accent:** Navy blue (`#0d1b4a`) for links, buttons, branding
+- **Typography:** DM Sans (body) + Instrument Serif (headlines/logo italic accent)
+- **Cards:** White background with subtle gray border + shadow (defined as `glass` CSS utility)
+- **Verdict colors:** Emerald (worth it), Amber (close enough), Red (stick with brand)
+- **Footer tone:** Editorial — uppercase tracking, "Transparency is our only product"
+- **Comparison page:** 2-column layout on desktop (main content + sticky sidebar)
 
 ## Project Structure
 
@@ -33,38 +39,51 @@ Community-driven website where users look up, vote on, and contribute evidence a
 src/
   app/                    # Next.js App Router pages and API routes
     api/
-      auth/[...nextauth]/ # Auth endpoints
+      auth/[...nextauth]/ # Auth endpoints (Google + Email)
       votes/              # Vote API (cast/change vote, recompute verdict)
       comparisons/        # Comparison CRUD (GET list/single, POST create)
       comparisons/[slug]/flag/ # Flag comparison as outdated
       evidence/           # Evidence submission (GET/POST)
-      search/             # Search API (Prisma contains)
+      search/             # Search API
       admin/              # Admin actions (approve/reject pending submissions)
       upload/             # Image upload to R2
       categories/         # GET categories list
-    compare/[slug]/       # Comparison detail page (BrandHero + GenericAlternative)
+    auth/
+      signin/             # Custom sign-in page (Google + Email magic link)
+      verify/             # "Check your email" page after magic link sent
+    compare/[slug]/       # Comparison detail page (2-column: BrandHero + sidebar)
+    categories/           # Category index page
     categories/[slug]/    # Category browsing with filters
+    top-rated/            # Top rated comparisons by confidence score
+    new/                  # Recently added comparisons
     search/               # Search results page
     submit/               # Submit new comparison (auth-gated)
     user/[username]/      # User profile
     admin/                # Admin dashboard (admin-only)
     about/                # Editorial independence policy
+    privacy/              # Privacy policy
+    terms/                # Terms of service
+    contact/              # Contact page with FAQ
+    not-found.tsx         # Custom 404 page with search
+    loading.tsx           # Homepage loading skeleton
     icon.svg              # Favicon (G? in emerald/dark)
     apple-icon.svg        # Apple touch icon
+    sitemap.ts            # Dynamic sitemap generation
+    robots.ts             # Robots.txt
   components/
     layout/               # Navbar, Footer, SearchBar, Providers (SessionProvider)
     comparison/           # ProductCard, VerdictBadge, GenericStatusBadge, BrandHero,
                           # GenericAlternative, QuickFacts, VoteButtons, VoteBreakdown,
                           # EvidenceList, EvidenceForm, FreshnessIndicator, FlagOutdatedButton
     category/             # CategoryGrid, CategoryFilter
-    home/                 # TrendingSection, RecentActivity, RecentlyVerifiedSection
+    home/                 # TrendingSection, RecentActivity
     admin/                # SubmissionQueue
-    ui/                   # Badge, Button, Card, ProductIcon
+    ui/                   # Badge, Button, Card, ProductIcon, Skeleton
   lib/
     db.ts                 # Prisma client singleton (PrismaNeon adapter)
-    auth.ts               # NextAuth config (Google OAuth, JWT, Prisma adapter)
+    auth.ts               # NextAuth config (Google OAuth + Email provider, JWT, Prisma adapter)
     verdict.ts            # Verdict computation (pure function) + savings calculation
-    search.ts             # Search utilities (Prisma contains with "X vs Y" parsing)
+    search.ts             # Search: tsvector full-text with trigram fallback → Prisma contains fallback
     slug.ts               # Slug generation with collision handling
     upload.ts             # R2 image upload (validate + upload)
     rate-limit.ts         # Rate limiting (in-memory sliding window, per API route)
@@ -72,9 +91,10 @@ src/
     seo.ts                # SEO metadata helpers (brand-first titles, JSON-LD)
     brand-logos.ts        # Brand-to-domain mapping for logo.dev API (75+ brands)
   prisma/
-    schema.prisma         # Database schema (all models + enums)
-    seed.ts               # Seed data (100 researched comparisons, uses PrismaNeon adapter)
-    search_vector_migration_backup/ # Full-text search SQL migration (apply when needed)
+    schema.prisma         # Database schema (all models + enums + searchVector tsvector field)
+    seed.ts               # Seed data (120 comparisons: 100 US + 20 Canadian, uses PrismaNeon adapter)
+    apply-search-migration.ts  # Script to apply full-text search indexes (run with npx tsx)
+    search_vector_migration_backup/ # Raw SQL for tsvector migration
   test/
     setup.ts              # Vitest setup (jest-dom matchers, cleanup)
     mock-prisma.ts        # Reusable Prisma mock for tests
@@ -84,12 +104,12 @@ src/
 
 ## Data Model
 
-- **ProductComparison** — central entity with generic + name brand details, verdict, confidence, status, lastVerifiedAt, flaggedOutdated, flagCount
+- **ProductComparison** — central entity with generic + name brand details, verdict, confidence, status, lastVerifiedAt, flaggedOutdated, flagCount, searchVector (tsvector)
 - **Vote** — one per user per comparison (upsert), triggers verdict recomputation
 - **Evidence** — user-submitted proof with confidence tier (CONFIRMED/COMMUNITY/UNVERIFIED)
-- **User** — Google OAuth, auto-generated username, USER or ADMIN role
+- **User** — Google OAuth or Email magic link, auto-generated username, USER or ADMIN role
 - **Category** — flat list with emoji icons and comparison counts (8 categories)
-- **Account/Session/VerificationToken** — NextAuth adapter tables
+- **Account/Session/VerificationToken** — NextAuth adapter tables (VerificationToken used for email magic links)
 
 ## Core Business Logic
 
@@ -106,15 +126,33 @@ src/
 - `getBrandLogoUrl(brandName)` returns logo.dev URL or null if no token/no mapping
 - Used by ProductIcon component with emoji fallback
 
-## UX Design: Brand-Name-First
+### Search (`src/lib/search.ts`)
+- Parses "X vs Y" queries
+- Tries tsvector full-text search with `ts_rank()` + `similarity()` (trigram fuzzy matching)
+- Falls back to Prisma `contains` if tsvector migration hasn't been applied
+- Apply migration: `npx tsx prisma/apply-search-migration.ts`
 
-The site uses a **brand-first mental model** — users think about the brand product (Advil, Tide) and want to know if a good generic exists. Key components:
+## Authentication
 
-- **ProductCard** — shows brand name product prominently, GenericStatusBadge below ("✓ Generic Worth It — Save 67%"), generic info as secondary text
-- **BrandHero** — large brand product display at top of comparison detail page
-- **GenericAlternative** — subordinate card showing generic product details
-- **GenericStatusBadge** — verdict display with brand-first language (replaces VerdictBadge in card contexts)
-- **ProductIcon** — renders brand logos from logo.dev API, falls back to category emoji
+Two sign-in methods configured in `src/lib/auth.ts`:
+1. **Google OAuth** — via NextAuth GoogleProvider
+2. **Email Magic Link** — via NextAuth EmailProvider + Resend API (sends branded HTML email with sign-in button)
+
+Custom sign-in page at `/auth/signin` with both options. Verify page at `/auth/verify`.
+
+Sign-in links throughout the app point to `/auth/signin` (not `/api/auth/signin`).
+
+## CSS Design System (`src/app/globals.css`)
+
+Custom Tailwind v4 utilities defined via `@utility`:
+- `glass` — white card: `bg-white`, `border-gray-200`, `shadow-sm`
+- `glass-hover` — hover state: lighter bg, darker border, larger shadow
+- `gradient-mesh` — subtle navy radial gradients for hero background
+- `accent-line` — 40px navy line before section headers
+- `gradient-divider` — full-width gray gradient horizontal rule
+- `animate-fade-up` / `animate-fade-in` — entrance animations with `delay-*` variants
+
+Color tokens: `--background: #fafaf8`, `--navy: #0d1b4a`, `--navy-light: #1e3a7a`
 
 ## Development Commands
 
@@ -124,9 +162,10 @@ npm test             # Run Vitest tests (349 tests)
 npm run test:watch   # Watch mode
 npm run build        # Build (includes prisma generate)
 npx prisma db push   # Push schema to database
-npx prisma db seed   # Seed database (100 comparisons)
+npx prisma db seed   # Seed database (120 comparisons: 100 US + 20 Canadian)
 npx prisma studio    # Visual DB browser
 npx prisma generate  # Regenerate Prisma client
+npx tsx prisma/apply-search-migration.ts  # Apply full-text search indexes
 ```
 
 ## Architecture Decisions
@@ -137,57 +176,33 @@ npx prisma generate  # Regenerate Prisma client
 - **prisma generate in build** — `package.json` build script runs `prisma generate && next build`; `postinstall` also runs `prisma generate` for Vercel deployments
 - **Rate limiting in API route handlers** (not edge middleware) — edge middleware is stateless on Vercel
 - **ISR caching** — comparison pages (60s), category pages (5min), homepage (2min), search (always dynamic)
-- **Server components by default** — client components only for interactive parts (voting, forms)
+- **Server components by default** — client components only for interactive parts (voting, forms, sign-in)
 - **Flat categories** for v1 — hierarchical deferred to v2
 - **Brand-first UX** — cards lead with name brand product, show generic status as verdict indicator
 - **logo.dev for brand images** — free tier (500K/month), publishable token in NEXT_PUBLIC env var, emoji fallback when no token
+- **Light editorial theme** — navy (#0d1b4a) primary accent, warm off-white background, DM Sans + Instrument Serif
+- **2-column comparison page** — main content (2/3) + sticky sidebar (1/3) on desktop, stacks on mobile
+- **Custom sign-in page** — `/auth/signin` with Google + Email magic link options
 
 ## Implementation Status
 
-### Phase 1: Foundation (Tasks 1-6) -- COMPLETE
-- [x] Task 1: Next.js 15 project scaffolding (Next.js 16.2.2 / Tailwind v4)
-- [x] Task 2: Testing infrastructure (Vitest 4.1.2 + React Testing Library)
-- [x] Task 3: Prisma setup + full database schema (Prisma v7)
-- [x] Task 4: Auth setup (NextAuth v4 + @auth/prisma-adapter v2)
-- [x] Task 5: Verdict computation logic (20 tests)
-- [x] Task 6: Seed data (51 comparisons across 8 categories)
+All phases COMPLETE. Site is live at genericornot.com.
 
-### Phase 2: Core API (Tasks 7-12) -- COMPLETE
-- [x] Task 7: Comparisons API — Read
-- [x] Task 8: Comparisons API — Create (Submit)
-- [x] Task 9: Votes API
-- [x] Task 10: Evidence API
-- [x] Task 11: Search API (PostgreSQL full-text)
-- [x] Task 12: Admin API
-
-### Phase 3: Pages & Components (Tasks 13-23) -- COMPLETE
-- [x] Task 13: Layout, Navbar, shared UI
-- [x] Task 14: VerdictBadge + ComparisonCard
-- [x] Task 15: Homepage
-- [x] Task 16: Comparison page — read-only display
-- [x] Task 17: Comparison page — voting UI
-- [x] Task 18: Comparison page — evidence form
-- [x] Task 19: Category page
-- [x] Task 20: Search results page
-- [x] Task 21: Submit comparison page
-- [x] Task 22: User profile page
-- [x] Task 23: Admin dashboard
-
-### Phase 4: Polish (Tasks 24-27) -- COMPLETE
-- [x] Task 24: SEO (meta tags, sitemap, JSON-LD)
-- [x] Task 25: Image upload (Cloudflare R2)
-- [x] Task 26: Rate limiting
-- [x] Task 27: Mobile responsiveness + final polish
-
-### Post-Launch Enhancements -- COMPLETE
-- [x] Evidence confidence tiers (CONFIRMED/COMMUNITY/UNVERIFIED)
-- [x] Data freshness tracking (lastVerifiedAt + flaggedOutdated + flagCount)
-- [x] Vote integrity (1-hour account age minimum)
-- [x] Editorial independence policy (/about page)
-- [x] Seed data upgraded to 100 researched comparisons with real evidence
-- [x] Brand-name-first UI redesign (ProductCard, BrandHero, GenericAlternative, GenericStatusBadge)
-- [x] Brand logo integration via logo.dev API (75+ brand mappings)
-- [x] Custom favicon (G? in emerald/dark)
+### Completed Features
+- Full CRUD: comparisons, votes, evidence, categories
+- Google OAuth + Email Magic Link authentication
+- Brand-first UI with logo.dev integration
+- SEO (sitemap, robots.txt, JSON-LD, OpenGraph)
+- Rate limiting on all mutation endpoints
+- Vote integrity (1-hour account age minimum)
+- Evidence confidence tiers (CONFIRMED/COMMUNITY/UNVERIFIED)
+- Data freshness tracking + outdated flagging
+- Admin dashboard for submission review
+- Custom 404 page with search
+- Loading skeletons for all data pages
+- 120 seed comparisons (100 US + 20 Canadian)
+- Full-text search upgrade (tsvector + trigram, with migration script)
+- All 14 pages: home, categories, categories/[slug], top-rated, new, compare/[slug], search, submit, about, privacy, terms, contact, user/[username], admin
 
 ## Environment Variables
 
@@ -195,7 +210,9 @@ See `.env.example` for required variables:
 - `DATABASE_URL` — Neon PostgreSQL connection string (set in .env and Vercel)
 - `NEXTAUTH_SECRET` — Random secret for JWT signing (set in Vercel)
 - `NEXTAUTH_URL` — Base URL (`http://localhost:3000` dev, `https://genericornot.com` prod)
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth credentials (NOT YET SET UP)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth credentials (set in Vercel, consent screen published)
+- `RESEND_API_KEY` — Resend API key for email magic links (NOT YET SET UP — need resend.com account + domain verification)
+- `EMAIL_FROM` — Sender address for magic link emails (default: `GenericOrNot <noreply@genericornot.com>`)
 - `NEXT_PUBLIC_LOGO_DEV_TOKEN` — logo.dev publishable API key (set in .env and Vercel)
 - `R2_*` — Cloudflare R2 credentials (NOT YET SET UP)
 
@@ -204,33 +221,43 @@ See `.env.example` for required variables:
 - **Vercel project:** genericornot (seawaydigital org)
 - **Auto-deploy:** pushes to `master` branch auto-deploy to production
 - **Domain:** genericornot.com (DNS via Porkbun → Vercel)
-  - A record: `76.76.21.21` (Vercel recommends updating to `216.198.79.1`)
-  - CNAME www: `cname.vercel-dns.com` (Vercel recommends `239442f2da81494d.vercel-dns-017.com`)
-- **Database:** Neon project "GenericOrNot", US East 2 (Ohio), seeded with 100 comparisons
-
-## Trust & Data Integrity
-
-- **Evidence confidence tiers**: CONFIRMED (FDA/manufacturer docs), COMMUNITY (multiple reports), UNVERIFIED (single report)
-- **Data freshness**: `lastVerifiedAt` timestamp on comparisons, color-coded freshness indicator (green/amber/red)
-- **Outdated flagging**: Users can flag comparisons as outdated; auto-flags at 3+ reports
-- **Vote integrity**: 1-hour account age minimum for voting to prevent brigading
-- **Editorial independence**: `/about` page with stated policy — verdicts are never influenced by sponsors
+- **Database:** Neon project "GenericOrNot", US East 2 (Ohio), seeded with 120 comparisons
+- **Google OAuth:** Google Cloud project "Generic Or Not", consent screen published (External), client credentials in Vercel env vars
+- **FlexOffers:** Domain verification meta tag added to site header
 
 ## What's NOT Yet Set Up
 
-- [ ] **Google OAuth** — GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET not configured. Users cannot sign in, vote, or submit yet.
+- [ ] **Email magic link** — RESEND_API_KEY not configured in Vercel. Need to: sign up at resend.com, verify genericornot.com domain, get API key. Alternative: switch to Google Workspace SMTP (noreply@genericornot.com via seawaydigital.ca workspace).
 - [ ] **Cloudflare R2** — Image upload API exists but R2 credentials not set. Product images use logo.dev API instead.
-- [ ] **Canadian product data** — Seed data is US-focused. Need to add No Name, President's Choice, Compliments, Great Value Canada comparisons.
-- [ ] **Full-text search migration** — SQL at `prisma/search_vector_migration_backup/`. Currently using Prisma `contains` queries.
+- [ ] **Full-text search migration** — Script ready at `prisma/apply-search-migration.ts`. Run `npx tsx prisma/apply-search-migration.ts` against production DB to enable. Currently using Prisma `contains` fallback.
 - [ ] **Analytics** — No Vercel Analytics or tracking yet.
+- [ ] **Error tracking** — No Sentry or similar. Global `error.tsx` boundary missing.
+- [ ] **Google OAuth testing** — Getting `401 invalid_client` on sign-in. May need Vercel redeploy after adding env vars, or propagation delay after publishing consent screen.
+
+## What's DONE (recently completed)
+
+- [x] Light editorial theme redesign (dark → light, emerald → navy)
+- [x] All pages built: categories index, top-rated, new, privacy, terms, contact
+- [x] 2-column comparison detail page layout
+- [x] Custom 404 page with search bar
+- [x] Loading skeletons for all data pages
+- [x] 20 Canadian product comparisons (No Name, PC, Compliments, Life Brand, Selection, Exact)
+- [x] Full-text search with tsvector + trigram (migration script + updated search lib)
+- [x] Email magic link authentication via Resend (auth config + sign-in page + verify page)
+- [x] Google OAuth credentials configured in Vercel
+- [x] Google OAuth consent screen published to production
+- [x] FlexOffers domain verification meta tag
+- [x] Custom sign-in page at /auth/signin (Google + Email options)
 
 ## Conventions
 
 - Tests colocated in `__tests__/` directories next to source
-- TDD: write failing test first, then implement
-- One commit per task completion
+- All 349 tests must pass before pushing
 - All new comparisons start as PENDING, require admin approval
 - One vote per user per comparison (upsert pattern)
 - Slugs auto-generated from product names with collision suffix
 - Brand-first UX: cards lead with name brand, show generic status as indicator
 - `tsconfig.json` excludes `prisma/` directory from TypeScript build checks (seed.ts uses different import patterns)
+- CSS uses `@utility` directives in globals.css for custom Tailwind v4 classes
+- Navy (`#0d1b4a`) for accent/links, grays for text hierarchy (900/700/500/400/300)
+- Sign-in links point to `/auth/signin`, not `/api/auth/signin`
