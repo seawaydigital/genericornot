@@ -168,6 +168,15 @@ npx prisma generate  # Regenerate Prisma client
 npx tsx prisma/apply-search-migration.ts  # Apply full-text search indexes
 ```
 
+## Admin Operations
+
+```bash
+# Promote a user to ADMIN role (must sign in at least once first)
+npx tsx scripts/promote-admin.ts you@example.com
+```
+
+Point your local `.env` `DATABASE_URL` at the target database (prod or dev) before running. The user must have signed in at least once so their `User` row exists. Script is idempotent.
+
 ## Architecture Decisions
 
 - **NextAuth v4** (not v5 beta) — stable API, all code uses `NextAuthOptions`, `getServerSession`
@@ -227,15 +236,19 @@ See `.env.example` for required variables:
 
 ## What's NOT Yet Set Up
 
-- [ ] **Email magic link** — RESEND_API_KEY not configured in Vercel. Need to: sign up at resend.com, verify genericornot.com domain, get API key. Alternative: switch to Google Workspace SMTP (noreply@genericornot.com via seawaydigital.ca workspace).
-- [ ] **Cloudflare R2** — Image upload API exists but R2 credentials not set. Product images use logo.dev API instead.
+- [ ] **Email magic link provisioning** — Code handles missing env vars gracefully (email provider is now conditional in `src/lib/auth.ts`; signin page hides the email form when disabled). Still need to: sign up at resend.com, verify genericornot.com domain, add `RESEND_API_KEY` + `EMAIL_FROM` to Vercel. Alternative: Google Workspace SMTP via seawaydigital.ca workspace.
+- [ ] **Cloudflare R2** — Image upload API exists but R2 credentials not set and no UI wires to it. Either activate it or delete the dead code in a follow-up.
 - [ ] **Full-text search migration** — Script ready at `prisma/apply-search-migration.ts`. Run `npx tsx prisma/apply-search-migration.ts` against production DB to enable. Currently using Prisma `contains` fallback.
-- [ ] **Analytics** — No Vercel Analytics or tracking yet.
-- [ ] **Error tracking** — No Sentry or similar. Global `error.tsx` boundary missing.
-- [ ] **Google OAuth testing** — Getting `401 invalid_client` on sign-in. May need Vercel redeploy after adding env vars, or propagation delay after publishing consent screen.
+- [ ] **Error tracking** — No Sentry or similar (console.error only). Route-level and root error boundaries now exist (`src/app/error.tsx`, `src/app/global-error.tsx`).
+- [ ] **Google OAuth testing** — Reported `401 invalid_client` on sign-in. After auth crash fix + redeploy, verify this resolves. If not, re-check Vercel env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`) and the Google Cloud redirect URI (`https://genericornot.com/api/auth/callback/google`).
 
 ## What's DONE (recently completed)
 
+- [x] Auth module made crash-safe — `EmailProvider` only registered when `RESEND_API_KEY` + `EMAIL_FROM` are set, no more runtime assertions
+- [x] Sign-in page conditionally hides email form when provider disabled (server-rendered check, no flash)
+- [x] Route-level and root error boundaries (`src/app/error.tsx`, `src/app/global-error.tsx`)
+- [x] Admin promotion CLI script (`scripts/promote-admin.ts`) — bootstrap the first admin
+- [x] Vercel Analytics wired into `src/app/layout.tsx`
 - [x] Light editorial theme redesign (dark → light, emerald → navy)
 - [x] All pages built: categories index, top-rated, new, privacy, terms, contact
 - [x] 2-column comparison detail page layout
