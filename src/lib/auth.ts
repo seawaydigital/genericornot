@@ -1,5 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import FacebookProvider from "next-auth/providers/facebook";
+import AzureADProvider from "next-auth/providers/azure-ad";
 import EmailProvider from "next-auth/providers/email";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { AdapterUser } from "next-auth/adapters";
@@ -27,7 +29,7 @@ const baseAdapter = PrismaAdapter(prisma);
 // so that a user who first signs in with, say, Google and later tries
 // Facebook with the same email is linked to their existing account
 // instead of creating a duplicate. This is safe only with providers
-// that verify email ownership (Google, Apple, Facebook, GitHub, X — all do).
+// that verify email ownership (Google, Apple, Facebook, Microsoft, GitHub, X — all do).
 // Do NOT enable this for any provider that doesn't verify emails.
 const providers: NextAuthOptions["providers"] = [];
 
@@ -42,6 +44,35 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 } else {
   console.warn(
     "[auth] Google sign-in disabled: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set"
+  );
+}
+
+if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
+  providers.push(
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    })
+  );
+} else {
+  console.warn(
+    "[auth] Facebook sign-in disabled: FACEBOOK_CLIENT_ID or FACEBOOK_CLIENT_SECRET not set"
+  );
+}
+
+if (process.env.AZURE_AD_CLIENT_ID && process.env.AZURE_AD_CLIENT_SECRET) {
+  providers.push(
+    AzureADProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET,
+      tenantId: process.env.AZURE_AD_TENANT_ID ?? "common",
+      allowDangerousEmailAccountLinking: true,
+    })
+  );
+} else {
+  console.warn(
+    "[auth] Microsoft sign-in disabled: AZURE_AD_CLIENT_ID or AZURE_AD_CLIENT_SECRET not set"
   );
 }
 

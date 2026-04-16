@@ -26,6 +26,7 @@ export function SignInForm({ availableProviders }: Props) {
   const hasAnyOAuth =
     has("google") ||
     has("facebook") ||
+    has("azure-ad") ||
     has("apple") ||
     has("github") ||
     has("twitter");
@@ -98,6 +99,22 @@ export function SignInForm({ availableProviders }: Props) {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               Continue with Google
+            </button>
+          )}
+
+          {has("azure-ad") && (
+            <button
+              onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 23 23" aria-hidden="true">
+                <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
+                <path fill="#f35325" d="M1 1h10v10H1z"/>
+                <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                <path fill="#ffba08" d="M12 12h10v10H12z"/>
+              </svg>
+              Continue with Microsoft
             </button>
           )}
 
