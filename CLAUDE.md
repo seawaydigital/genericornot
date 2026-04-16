@@ -13,14 +13,14 @@ Community-driven website where users look up, vote on, and contribute evidence a
 - **Framework:** Next.js 16.2.2 (App Router) with TypeScript
 - **Database:** Neon PostgreSQL (serverless, free tier, project "GenericOrNot", US East 2 Ohio)
 - **ORM:** Prisma v7 (uses `@prisma/adapter-neon` driver adapter, config in `prisma.config.ts`)
-- **Auth:** NextAuth.js v4 with Google OAuth + Email Magic Link (Resend) + @auth/prisma-adapter v2
+- **Auth:** NextAuth.js v4 with Google OAuth + Facebook OAuth + Microsoft (Azure AD) OAuth + Email Magic Link (Resend) + @auth/prisma-adapter v2
 - **Styling:** Tailwind CSS v4
 - **Image Storage:** Cloudflare R2 (S3-compatible, zero egress) — configured but not yet active
 - **Brand Logos:** logo.dev API (free tier 500K req/month, token in `NEXT_PUBLIC_LOGO_DEV_TOKEN`)
 - **Email:** Resend API for magic link emails (free tier 3K/month) — may switch to Google Workspace SMTP
 - **Hosting:** Vercel (auto-deploys from GitHub master branch)
 - **Testing:** Vitest 4.1.2 + React Testing Library + happy-dom (349 tests passing)
-- **Search:** Prisma contains queries with fallback; PostgreSQL full-text search (tsvector + trigram) ready via migration script
+- **Search:** PostgreSQL full-text search (tsvector + trigram) — migration applied, 100 rows indexed. Falls back to Prisma `contains` if tsvector unavailable.
 
 ## Visual Design
 
@@ -81,7 +81,7 @@ src/
     ui/                   # Badge, Button, Card, ProductIcon, Skeleton
   lib/
     db.ts                 # Prisma client singleton (PrismaNeon adapter)
-    auth.ts               # NextAuth config (Google OAuth + Email provider, JWT, Prisma adapter)
+    auth.ts               # NextAuth config (Google + Facebook + AzureAD + Email providers, all conditional on env vars, JWT, Prisma adapter)
     verdict.ts            # Verdict computation (pure function) + savings calculation
     search.ts             # Search: tsvector full-text with trigram fallback → Prisma contains fallback
     slug.ts               # Slug generation with collision handling
@@ -107,7 +107,7 @@ src/
 - **ProductComparison** — central entity with generic + name brand details, verdict, confidence, status, lastVerifiedAt, flaggedOutdated, flagCount, searchVector (tsvector)
 - **Vote** — one per user per comparison (upsert), triggers verdict recomputation
 - **Evidence** — user-submitted proof with confidence tier (CONFIRMED/COMMUNITY/UNVERIFIED)
-- **User** — Google OAuth or Email magic link, auto-generated username, USER or ADMIN role
+- **User** — Google/Facebook/Microsoft OAuth or Email magic link, auto-generated username, USER or ADMIN role. Same email across providers = same account (allowDangerousEmailAccountLinking: true on all providers)
 - **Category** — flat list with emoji icons and comparison counts (8 categories)
 - **Account/Session/VerificationToken** — NextAuth adapter tables (VerificationToken used for email magic links)
 
@@ -129,17 +129,25 @@ src/
 ### Search (`src/lib/search.ts`)
 - Parses "X vs Y" queries
 - Tries tsvector full-text search with `ts_rank()` + `similarity()` (trigram fuzzy matching)
-- Falls back to Prisma `contains` if tsvector migration hasn't been applied
-- Apply migration: `npx tsx prisma/apply-search-migration.ts`
+- Falls back to Prisma `contains` if tsvector unavailable
+- Migration already applied to production (100 rows indexed, trigger auto-updates new rows)
+- Re-run if needed: `npx tsx prisma/apply-search-migration.ts` (idempotent)
 
 ## Authentication
 
-Two sign-in methods configured in `src/lib/auth.ts`:
-1. **Google OAuth** — via NextAuth GoogleProvider
-2. **Email Magic Link** — via NextAuth EmailProvider + Resend API (sends branded HTML email with sign-in button)
+All providers registered conditionally on env vars — app boots cleanly with any subset configured.
+Sign-in buttons appear/hide automatically based on which providers are active.
 
-Custom sign-in page at `/auth/signin` with both options. Verify page at `/auth/verify`.
+Configured providers in `src/lib/auth.ts`:
+1. **Google OAuth** — `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` — ✅ LIVE
+2. **Facebook OAuth** — `FACEBOOK_CLIENT_ID` + `FACEBOOK_CLIENT_SECRET` — ✅ LIVE (app published in Meta developer portal)
+3. **Microsoft OAuth** — `AZURE_AD_CLIENT_ID` + `AZURE_AD_CLIENT_SECRET` + `AZURE_AD_TENANT_ID` (default: `common`) — ⏳ Code ready, env vars not yet set (Azure tenant setup pending)
+4. **Email Magic Link** — `RESEND_API_KEY` + `EMAIL_FROM` — ⏳ Not yet set up (needs Resend account + domain verification)
 
+All OAuth providers use `allowDangerousEmailAccountLinking: true` — same email across providers = same account, no duplicates.
+
+Custom sign-in page at `/auth/signin` (server component passes available provider IDs to `SignInForm` client component).
+Verify page at `/auth/verify` for email magic links.
 Sign-in links throughout the app point to `/auth/signin` (not `/api/auth/signin`).
 
 ## CSS Design System (`src/app/globals.css`)
@@ -191,7 +199,9 @@ Point your local `.env` `DATABASE_URL` at the target database (prod or dev) befo
 - **logo.dev for brand images** — free tier (500K/month), publishable token in NEXT_PUBLIC env var, emoji fallback when no token
 - **Light editorial theme** — navy (#0d1b4a) primary accent, warm off-white background, DM Sans + Instrument Serif
 - **2-column comparison page** — main content (2/3) + sticky sidebar (1/3) on desktop, stacks on mobile
-- **Custom sign-in page** — `/auth/signin` with Google + Email magic link options
+- **Custom sign-in page** — `/auth/signin` split into server page + `SignInForm` client component; buttons auto-show based on registered providers
+- **Multi-provider auth** — Google + Facebook active; Microsoft code ready (needs Azure env vars); email magic link code ready (needs Resend env vars)
+- **Account linking** — `allowDangerousEmailAccountLinking: true` on all providers; same email = one account regardless of sign-in method
 
 ## Implementation Status
 
@@ -216,14 +226,16 @@ All phases COMPLETE. Site is live at genericornot.com.
 ## Environment Variables
 
 See `.env.example` for required variables:
-- `DATABASE_URL` — Neon PostgreSQL connection string (set in .env and Vercel)
-- `NEXTAUTH_SECRET` — Random secret for JWT signing (set in Vercel)
-- `NEXTAUTH_URL` — Base URL (`http://localhost:3000` dev, `https://genericornot.com` prod)
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth credentials (set in Vercel, consent screen published)
-- `RESEND_API_KEY` — Resend API key for email magic links (NOT YET SET UP — need resend.com account + domain verification)
-- `EMAIL_FROM` — Sender address for magic link emails (default: `GenericOrNot <noreply@genericornot.com>`)
-- `NEXT_PUBLIC_LOGO_DEV_TOKEN` — logo.dev publishable API key (set in .env and Vercel)
-- `R2_*` — Cloudflare R2 credentials (NOT YET SET UP)
+- `DATABASE_URL` — Neon PostgreSQL connection string (set in .env and Vercel) ✅
+- `NEXTAUTH_SECRET` — Random secret for JWT signing (set in Vercel) ✅
+- `NEXTAUTH_URL` — `https://genericornot.com` (no trailing slash, no www) ✅
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth (set in Vercel, Google Cloud project "Generic Or Not") ✅
+- `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` — Facebook OAuth (Meta app "Generic or Not", App ID 1875911233106909) ✅
+- `AZURE_AD_CLIENT_ID` / `AZURE_AD_CLIENT_SECRET` / `AZURE_AD_TENANT_ID` — Microsoft OAuth (⏳ not yet set — Azure tenant setup needed)
+- `RESEND_API_KEY` — Resend API for email magic links (⏳ not yet set — need resend.com account + domain verification)
+- `EMAIL_FROM` — Sender for magic link emails (`GenericOrNot <noreply@genericornot.com>`)
+- `NEXT_PUBLIC_LOGO_DEV_TOKEN` — logo.dev publishable API key (set in .env and Vercel) ✅
+- `R2_*` — Cloudflare R2 credentials (⏳ not yet set — dead code, activate or delete)
 
 ## Deployment
 
@@ -231,36 +243,34 @@ See `.env.example` for required variables:
 - **Auto-deploy:** pushes to `master` branch auto-deploy to production
 - **Domain:** genericornot.com (DNS via Porkbun → Vercel)
 - **Database:** Neon project "GenericOrNot", US East 2 (Ohio), seeded with 120 comparisons
-- **Google OAuth:** Google Cloud project "Generic Or Not", consent screen published (External), client credentials in Vercel env vars
+- **Google OAuth:** Google Cloud project "Generic Or Not", consent screen published (External), credentials in Vercel ✅
+- **Facebook OAuth:** Meta app "Generic or Not" (App ID 1875911233106909), published, credentials in Vercel ✅
+- **Domain config:** genericornot.com → Production; www.genericornot.com → 308 redirect to genericornot.com (non-www is canonical)
 - **FlexOffers:** Domain verification meta tag added to site header
+- **Admin:** andrew@seawaydigital.ca promoted to ADMIN role (username: andrew-austin-468)
 
 ## What's NOT Yet Set Up
 
-- [ ] **Email magic link provisioning** — Code handles missing env vars gracefully (email provider is now conditional in `src/lib/auth.ts`; signin page hides the email form when disabled). Still need to: sign up at resend.com, verify genericornot.com domain, add `RESEND_API_KEY` + `EMAIL_FROM` to Vercel. Alternative: Google Workspace SMTP via seawaydigital.ca workspace.
-- [ ] **Cloudflare R2** — Image upload API exists but R2 credentials not set and no UI wires to it. Either activate it or delete the dead code in a follow-up.
-- [ ] **Full-text search migration** — Script ready at `prisma/apply-search-migration.ts`. Run `npx tsx prisma/apply-search-migration.ts` against production DB to enable. Currently using Prisma `contains` fallback.
-- [ ] **Error tracking** — No Sentry or similar (console.error only). Route-level and root error boundaries now exist (`src/app/error.tsx`, `src/app/global-error.tsx`).
-- [ ] **Google OAuth testing** — Reported `401 invalid_client` on sign-in. After auth crash fix + redeploy, verify this resolves. If not, re-check Vercel env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`) and the Google Cloud redirect URI (`https://genericornot.com/api/auth/callback/google`).
+- [ ] **Microsoft OAuth** — Code in `src/lib/auth.ts` is ready. Needs Azure AD tenant + app registration. Set `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID=common` in Vercel. Azure setup blocked by account type (no subscription); try signing into portal.azure.com with a personal Microsoft account instead.
+- [ ] **Email magic link provisioning** — Code ready, provider conditional on env vars. Need: resend.com account, verify genericornot.com domain in Porkbun DNS, add `RESEND_API_KEY` + `EMAIL_FROM` to Vercel.
+- [ ] **Cloudflare R2** — Image upload API exists (`src/app/api/upload/`, `src/lib/upload.ts`) but no UI wires to it and R2 credentials not set. Recommend deleting dead code unless product photos are a priority.
+- [ ] **Error tracking** — No Sentry. Route-level (`src/app/error.tsx`) and root (`src/app/global-error.tsx`) error boundaries exist as safety nets.
+- [ ] **Facebook app icon** — Meta developer portal requires 1024×1024 icon for app store listing (not blocking functionality).
 
 ## What's DONE (recently completed)
 
-- [x] Auth module made crash-safe — `EmailProvider` only registered when `RESEND_API_KEY` + `EMAIL_FROM` are set, no more runtime assertions
-- [x] Sign-in page conditionally hides email form when provider disabled (server-rendered check, no flash)
-- [x] Route-level and root error boundaries (`src/app/error.tsx`, `src/app/global-error.tsx`)
-- [x] Admin promotion CLI script (`scripts/promote-admin.ts`) — bootstrap the first admin
-- [x] Vercel Analytics wired into `src/app/layout.tsx`
-- [x] Light editorial theme redesign (dark → light, emerald → navy)
-- [x] All pages built: categories index, top-rated, new, privacy, terms, contact
-- [x] 2-column comparison detail page layout
-- [x] Custom 404 page with search bar
-- [x] Loading skeletons for all data pages
-- [x] 20 Canadian product comparisons (No Name, PC, Compliments, Life Brand, Selection, Exact)
-- [x] Full-text search with tsvector + trigram (migration script + updated search lib)
-- [x] Email magic link authentication via Resend (auth config + sign-in page + verify page)
-- [x] Google OAuth credentials configured in Vercel
-- [x] Google OAuth consent screen published to production
-- [x] FlexOffers domain verification meta tag
-- [x] Custom sign-in page at /auth/signin (Google + Email options)
+- [x] **Google OAuth fixed and live** — Root cause was www/non-www domain mismatch (Vercel was redirecting genericornot.com → www; flipped so www → genericornot.com). Google Cloud redirect URI: `https://genericornot.com/api/auth/callback/google`
+- [x] **Facebook OAuth live** — Meta app "Generic or Not" created, published, credentials in Vercel. Callback: `https://genericornot.com/api/auth/callback/facebook`
+- [x] **Microsoft OAuth code added** — `AzureADProvider` wired in auth.ts + Microsoft button in sign-in form; awaiting Azure env vars
+- [x] **Full-text search migration applied** — 100 rows indexed with tsvector + trigram; auto-update trigger active for new rows; `apply-search-migration.ts` rewritten to handle dollar-quoted SQL
+- [x] **Admin promoted** — andrew@seawaydigital.ca → ADMIN (username: andrew-austin-468)
+- [x] **Vercel domain fixed** — genericornot.com = Production; www = 308 redirect
+- [x] Auth module crash-safe — all providers conditional on env vars
+- [x] Sign-in page: server component + `SignInForm` client component; buttons auto-show/hide
+- [x] Route-level + root error boundaries
+- [x] Admin promotion CLI script (`scripts/promote-admin.ts`)
+- [x] Vercel Analytics in layout
+- [x] Light editorial theme, all 14 pages, 120 seed comparisons, Canadian products
 
 ## Conventions
 
