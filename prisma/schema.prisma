@@ -24,6 +24,15 @@ enum ComparisonStatus {
   PENDING
   APPROVED
   REJECTED
+  // Hidden from the public site but kept for history (e.g. product not sold
+  // in Canada, or withdrawn from the market). Admins can restore it.
+  ARCHIVED
+}
+
+enum EvidenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum EvidenceType {
@@ -53,10 +62,14 @@ model User {
   image     String?
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
+  // Required by NextAuth's email (magic link) provider, which calls
+  // updateUser({ emailVerified }) when an existing user signs in by email.
+  emailVerified DateTime?
 
   votes       Vote[]
   evidence    Evidence[]
   comparisons ProductComparison[] @relation("SubmittedBy")
+  flags       ComparisonFlag[]
 
   accounts Account[]
   sessions Session[]
@@ -115,15 +128,26 @@ model ProductComparison {
   genericBrand         String
   genericStore         String
   genericPrice         Decimal?
+  // Free-text package size, e.g. "200 g", "100 tablets", "2 x 1.89 L".
+  // Used to show what a price buys and to compare unit prices.
+  genericSize          String?
   genericImageUrl      String?
   nameBrandProductName String
   nameBrand            String
   nameBrandPrice       Decimal?
+  nameBrandSize        String?
   nameBrandImageUrl    String?
   categoryId           String
+  // Community verdict — computed ONLY from real rows in Vote.
   verdict              Verdict          @default(PENDING)
   confidenceScore      Int              @default(0)
   totalVotes           Int              @default(0)
+  // Research verdict from GenericOrNot editors, based on objective evidence
+  // (same medicinal ingredient, regulated standard, disclosed manufacturer).
+  // Shown, clearly labelled, until the community verdict has enough votes.
+  editorialVerdict     VoteValue?
+  editorialNote        String?
+  featured             Boolean          @default(false)
   status               ComparisonStatus @default(PENDING)
   rejectionReason      String?
   submittedById        String?
@@ -138,6 +162,7 @@ model ProductComparison {
   submittedBy User?      @relation("SubmittedBy", fields: [submittedById], references: [id])
   votes       Vote[]
   evidence    Evidence[]
+  flags       ComparisonFlag[]
 
   @@index([status])
   @@index([categoryId])
@@ -168,10 +193,30 @@ model Evidence {
   url          String?
   imageUrl     String?
   confidence   EvidenceConfidence @default(UNVERIFIED)
+  // Defaults to APPROVED so rows that were already public stay public when
+  // this column is added. New user submissions are created as PENDING by the
+  // evidence API and only appear after an admin approves them.
+  status       EvidenceStatus     @default(APPROVED)
   createdAt    DateTime           @default(now())
 
   comparison ProductComparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([comparisonId])
+}
+
+// One "this looks outdated" report per user per comparison. Replaces the old
+// bare counter, which let a single account flag the same page repeatedly.
+model ComparisonFlag {
+  id           String   @id @default(uuid())
+  userId       String
+  comparisonId String
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comparison ProductComparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, comparisonId])
   @@index([comparisonId])
 }
