@@ -88,8 +88,37 @@ describe("BrandHero", () => {
   });
 
   it("shows singular 'vote' for 1 vote", () => {
-    render(<BrandHero {...baseProps} totalVotes={1} />);
-    expect(screen.getByText("vote")).toBeInTheDocument();
+    render(<BrandHero {...baseProps} verdict="PENDING" totalVotes={1} />);
+    expect(screen.getByText(/1 vote so far/)).toBeInTheDocument();
+  });
+
+  it("labels a research verdict and says how many votes until the community takes over", () => {
+    render(
+      <BrandHero
+        {...baseProps}
+        verdict="PENDING"
+        totalVotes={2}
+        editorialVerdict="SAME_QUALITY"
+        editorialNote="Same medicinal ingredient and strength."
+      />
+    );
+    expect(screen.getByText("Research verdict.")).toBeInTheDocument();
+    expect(screen.getByText(/Same medicinal ingredient and strength\./)).toBeInTheDocument();
+    expect(screen.getByText(/takes over after 3 more/)).toBeInTheDocument();
+    expect(screen.getByText("Research")).toBeInTheDocument();
+    expect(screen.queryByText("confidence")).not.toBeInTheDocument();
+  });
+
+  it("shows the community verdict once there are enough votes, even with a research verdict", () => {
+    render(<BrandHero {...baseProps} editorialVerdict="NOT_WORTH_IT" />);
+    expect(screen.getByText("Generic Worth It")).toBeInTheDocument();
+    expect(screen.queryByText("Research verdict.")).not.toBeInTheDocument();
+  });
+
+  it("prices in Canadian dollars with the package size", () => {
+    render(<BrandHero {...baseProps} nameBrandSize="100 tablets" />);
+    expect(screen.getByText(/\$14\.99/)).toBeInTheDocument();
+    expect(screen.getByText(/100 tablets/)).toBeInTheDocument();
   });
 
   it("shows plural 'votes' for multiple votes", () => {

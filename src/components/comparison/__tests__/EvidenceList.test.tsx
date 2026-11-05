@@ -41,6 +41,21 @@ describe("EvidenceList", () => {
     render(<EvidenceList evidence={evidence} />);
     const link = screen.getByRole("link", { name: /view source/i });
     expect(link).toHaveAttribute("href", "https://example.com");
+    // User-supplied links must not pass SEO credit or opener access.
+    expect(link).toHaveAttribute("rel", "nofollow ugc noopener noreferrer");
+    expect(link).toHaveTextContent("example.com");
+  });
+
+  it("never renders non-http links as clickable", () => {
+    const evidence = [makeEvidence({ url: "javascript:alert(1)" })];
+    render(<EvidenceList evidence={evidence} />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("shows the evidence title", () => {
+    const evidence = [makeEvidence({ title: "Same medicinal ingredient" })];
+    render(<EvidenceList evidence={evidence} />);
+    expect(screen.getByRole("heading", { name: "Same medicinal ingredient" })).toBeInTheDocument();
   });
 
   it("does not render link when url is null", () => {
@@ -90,7 +105,7 @@ describe("EvidenceList", () => {
 
   it("handles empty evidence array", () => {
     render(<EvidenceList evidence={[]} />);
-    expect(screen.getByText(/No evidence submitted yet/)).toBeInTheDocument();
+    expect(screen.getByText(/No evidence yet/)).toBeInTheDocument();
   });
 
   it("renders correct type badge label for MANUFACTURER_INFO", () => {

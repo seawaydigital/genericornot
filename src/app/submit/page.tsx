@@ -1,22 +1,26 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { useSession, signIn } from "next-auth/react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 
 interface Category { id: string; name: string; icon: string; slug: string; }
 
 interface FormData {
-  genericProductName: string; genericBrand: string; genericStore: string; genericPrice: string;
-  nameBrandProductName: string; nameBrand: string; nameBrandPrice: string;
+  genericProductName: string; genericBrand: string; genericStore: string; genericPrice: string; genericSize: string;
+  nameBrandProductName: string; nameBrand: string; nameBrandPrice: string; nameBrandSize: string;
   categoryId: string; evidenceTitle: string; evidenceContent: string;
 }
 
 const INITIAL_FORM: FormData = {
-  genericProductName: "", genericBrand: "", genericStore: "", genericPrice: "",
-  nameBrandProductName: "", nameBrand: "", nameBrandPrice: "",
+  genericProductName: "", genericBrand: "", genericStore: "", genericPrice: "", genericSize: "",
+  nameBrandProductName: "", nameBrand: "", nameBrandPrice: "", nameBrandSize: "",
   categoryId: "", evidenceTitle: "", evidenceContent: "",
 };
+
+// Kept in sync with LIMITS in src/lib/validation.ts (server enforces them).
+const MAX = { product: 120, brand: 60, store: 60, size: 40, title: 120, content: 2000 };
 
 const inputClasses =
   "w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:border-[#0d1b4a]/30 focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200";
@@ -27,7 +31,7 @@ export default function SubmitPage() {
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [duplicate, setDuplicate] = useState(false);
+  const [duplicate, setDuplicate] = useState<{ slug: string | null } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -41,10 +45,15 @@ export default function SubmitPage() {
   if (!session) {
     return (
       <div className="mx-auto max-w-2xl px-4 md:px-6 py-20 text-center space-y-4">
-        <div className="text-4xl mb-4 opacity-20">&#128274;</div>
+        <div className="text-4xl mb-4 opacity-20" aria-hidden="true">&#128274;</div>
         <h1 className="text-2xl font-bold text-gray-900">Sign in to submit a comparison</h1>
         <p className="text-gray-500">You need to be signed in to contribute comparisons to GenericOrNot.</p>
-        <Button onClick={() => signIn("google")} size="lg">Sign in with Google</Button>
+        <Link
+          href="/auth/signin?callbackUrl=%2Fsubmit"
+          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-b from-[#0d1b4a] to-[#162d6b] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+        >
+          Sign in to continue
+        </Link>
       </div>
     );
   }
@@ -52,10 +61,10 @@ export default function SubmitPage() {
   if (submitted) {
     return (
       <div className="mx-auto max-w-2xl px-4 md:px-6 py-20 text-center space-y-4">
-        <div className="text-4xl mb-4 text-emerald-600">&#10003;</div>
+        <div className="text-4xl mb-4 text-emerald-600" aria-hidden="true">&#10003;</div>
         <h1 className="text-2xl font-bold text-gray-900">Submitted for review</h1>
-        <p className="text-gray-500">Your comparison has been submitted and will appear once an admin approves it. Thank you for contributing!</p>
-        <Button variant="secondary" onClick={() => { setForm(INITIAL_FORM); setSubmitted(false); setDuplicate(false); setErrors({}); }}>Submit another</Button>
+        <p className="text-gray-500">Thanks! A moderator will check it shortly — it goes live once approved. You can see its status on your profile.</p>
+        <Button variant="secondary" onClick={() => { setForm(INITIAL_FORM); setSubmitted(false); setDuplicate(null); setErrors({}); }}>Submit another</Button>
       </div>
     );
   }
@@ -63,59 +72,78 @@ export default function SubmitPage() {
   function setField(field: keyof FormData, value: string) { setForm((prev) => ({ ...prev, [field]: value })); }
 
   async function handleSubmit(e: FormEvent) {
-    e.preventDefault(); setSubmitting(true); setErrors({}); setDuplicate(false);
-    const body: Record<string, string | number | null> = {
+    e.preventDefault(); setSubmitting(true); setErrors({}); setDuplicate(null);
+    const body = {
       genericProductName: form.genericProductName.trim(), genericBrand: form.genericBrand.trim(),
       genericStore: form.genericStore.trim(), genericPrice: form.genericPrice ? parseFloat(form.genericPrice) : null,
+      genericSize: form.genericSize.trim(),
       nameBrandProductName: form.nameBrandProductName.trim(), nameBrand: form.nameBrand.trim(),
-      nameBrandPrice: form.nameBrandPrice ? parseFloat(form.nameBrandPrice) : null, categoryId: form.categoryId,
+      nameBrandPrice: form.nameBrandPrice ? parseFloat(form.nameBrandPrice) : null,
+      nameBrandSize: form.nameBrandSize.trim(),
+      categoryId: form.categoryId,
+      evidenceTitle: form.evidenceTitle.trim(), evidenceContent: form.evidenceContent.trim(),
     };
     try {
       const res = await fetch("/api/comparisons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (res.status === 409 || data.duplicate) { setDuplicate(true); setSubmitting(false); return; }
-      if (!res.ok) { setErrors(data.errors ?? { _: data.error ?? "Something went wrong" }); setSubmitting(false); return; }
-      if (form.evidenceTitle.trim() && form.evidenceContent.trim() && data.comparison?.id) {
-        await fetch("/api/evidence", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comparisonId: data.comparison.id, type: "OTHER", title: form.evidenceTitle.trim(), content: form.evidenceContent.trim() }) }).catch(() => {});
-      }
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409 || data.duplicate) { setDuplicate({ slug: data.existingSlug ?? null }); return; }
+      if (!res.ok) { setErrors(data.errors ?? { _: data.error ?? "Something went wrong" }); return; }
       setSubmitted(true);
     } catch { setErrors({ _: "Network error. Please try again." }); } finally { setSubmitting(false); }
   }
+
+  const fieldError = (field: string) => errors[field] ? <p className="text-red-600 text-xs mt-1">{errors[field]}</p> : null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 md:px-6 py-12">
       <div className="mb-10">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">Submit a Comparison</h1>
-        <p className="text-gray-500 text-sm">Help the community by adding a generic vs. name brand comparison. All submissions are reviewed before going live.</p>
+        <p className="text-gray-500 text-sm">Add a store-brand vs name-brand pair you&apos;ve seen in a Canadian store. Every submission is reviewed before it goes live.</p>
       </div>
 
-      {duplicate && (<div className="mb-6 bg-amber-50 rounded-2xl p-4 text-amber-700 text-sm"><strong>Possible duplicate:</strong> A similar comparison may already exist. Please search first.</div>)}
-      {errors._ && (<div className="mb-6 bg-red-50 rounded-2xl p-4 text-red-600 text-sm">{errors._}</div>)}
+      {duplicate && (
+        <div className="mb-6 bg-amber-50 rounded-2xl p-4 text-amber-800 text-sm">
+          <strong>Already here:</strong> this comparison has already been submitted.{" "}
+          {duplicate.slug ? (
+            <Link href={`/compare/${duplicate.slug}`} className="underline font-medium">View it and vote &rarr;</Link>
+          ) : (
+            "It's waiting for review."
+          )}
+        </div>
+      )}
+      {errors._ && (<div className="mb-6 bg-red-50 rounded-2xl p-4 text-red-600 text-sm" role="alert">{errors._}</div>)}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <fieldset className="glass rounded-2xl p-6 space-y-4">
-          <legend className="text-gray-900 font-semibold px-1">Generic / Store Brand</legend>
+          <legend className="text-gray-900 font-semibold px-1">Store Brand / Generic</legend>
           <div>
             <label htmlFor="genericProductName" className="block text-sm text-gray-600 mb-1.5">Product Name <span className="text-red-500">*</span></label>
-            <input id="genericProductName" type="text" value={form.genericProductName} onChange={(e) => setField("genericProductName", e.target.value)} placeholder="e.g. Ibuprofen 200mg" className={inputClasses} required />
-            {errors.genericProductName && <p className="text-red-600 text-xs mt-1">{errors.genericProductName}</p>}
+            <input id="genericProductName" type="text" maxLength={MAX.product} value={form.genericProductName} onChange={(e) => setField("genericProductName", e.target.value)} placeholder="e.g. Life Brand Ibuprofen 200 mg" className={inputClasses} required />
+            {fieldError("genericProductName")}
           </div>
           <div>
             <label htmlFor="genericBrand" className="block text-sm text-gray-600 mb-1.5">Brand <span className="text-red-500">*</span></label>
-            <input id="genericBrand" type="text" value={form.genericBrand} onChange={(e) => setField("genericBrand", e.target.value)} placeholder="e.g. Kirkland, Up&Up, Equate" className={inputClasses} required />
-            {errors.genericBrand && <p className="text-red-600 text-xs mt-1">{errors.genericBrand}</p>}
+            <input id="genericBrand" type="text" maxLength={MAX.brand} value={form.genericBrand} onChange={(e) => setField("genericBrand", e.target.value)} placeholder="e.g. No Name, President's Choice, Great Value, Kirkland Signature" className={inputClasses} required />
+            {fieldError("genericBrand")}
           </div>
           <div>
             <label htmlFor="genericStore" className="block text-sm text-gray-600 mb-1.5">Store <span className="text-red-500">*</span></label>
-            <input id="genericStore" type="text" value={form.genericStore} onChange={(e) => setField("genericStore", e.target.value)} placeholder="e.g. Costco, Target, Walmart" className={inputClasses} required />
-            {errors.genericStore && <p className="text-red-600 text-xs mt-1">{errors.genericStore}</p>}
+            <input id="genericStore" type="text" maxLength={MAX.store} value={form.genericStore} onChange={(e) => setField("genericStore", e.target.value)} placeholder="e.g. Loblaws, No Frills, Walmart, Costco, Shoppers Drug Mart" className={inputClasses} required />
+            {fieldError("genericStore")}
           </div>
-          <div>
-            <label htmlFor="genericPrice" className="block text-sm text-gray-600 mb-1.5">Price (optional)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input id="genericPrice" type="number" min="0" step="0.01" value={form.genericPrice} onChange={(e) => setField("genericPrice", e.target.value)} placeholder="0.00" className={`${inputClasses} pl-7`} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="genericPrice" className="block text-sm text-gray-600 mb-1.5">Price in CAD (optional)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input id="genericPrice" type="number" min="0" max="10000" step="0.01" inputMode="decimal" value={form.genericPrice} onChange={(e) => setField("genericPrice", e.target.value)} placeholder="0.00" className={`${inputClasses} pl-7`} />
+              </div>
+              {fieldError("genericPrice")}
+            </div>
+            <div>
+              <label htmlFor="genericSize" className="block text-sm text-gray-600 mb-1.5">Package size (optional)</label>
+              <input id="genericSize" type="text" maxLength={MAX.size} value={form.genericSize} onChange={(e) => setField("genericSize", e.target.value)} placeholder="e.g. 100 tablets, 1 kg, 2 L" className={inputClasses} />
+              {fieldError("genericSize")}
             </div>
           </div>
         </fieldset>
@@ -124,19 +152,27 @@ export default function SubmitPage() {
           <legend className="text-gray-900 font-semibold px-1">Name Brand</legend>
           <div>
             <label htmlFor="nameBrandProductName" className="block text-sm text-gray-600 mb-1.5">Product Name <span className="text-red-500">*</span></label>
-            <input id="nameBrandProductName" type="text" value={form.nameBrandProductName} onChange={(e) => setField("nameBrandProductName", e.target.value)} placeholder="e.g. Advil Ibuprofen 200mg" className={inputClasses} required />
-            {errors.nameBrandProductName && <p className="text-red-600 text-xs mt-1">{errors.nameBrandProductName}</p>}
+            <input id="nameBrandProductName" type="text" maxLength={MAX.product} value={form.nameBrandProductName} onChange={(e) => setField("nameBrandProductName", e.target.value)} placeholder="e.g. Advil Ibuprofen 200 mg Tablets" className={inputClasses} required />
+            {fieldError("nameBrandProductName")}
           </div>
           <div>
             <label htmlFor="nameBrand" className="block text-sm text-gray-600 mb-1.5">Brand <span className="text-red-500">*</span></label>
-            <input id="nameBrand" type="text" value={form.nameBrand} onChange={(e) => setField("nameBrand", e.target.value)} placeholder="e.g. Advil, Tylenol, Heinz" className={inputClasses} required />
-            {errors.nameBrand && <p className="text-red-600 text-xs mt-1">{errors.nameBrand}</p>}
+            <input id="nameBrand" type="text" maxLength={MAX.brand} value={form.nameBrand} onChange={(e) => setField("nameBrand", e.target.value)} placeholder="e.g. Advil, Tylenol, Kraft, Heinz" className={inputClasses} required />
+            {fieldError("nameBrand")}
           </div>
-          <div>
-            <label htmlFor="nameBrandPrice" className="block text-sm text-gray-600 mb-1.5">Price (optional)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input id="nameBrandPrice" type="number" min="0" step="0.01" value={form.nameBrandPrice} onChange={(e) => setField("nameBrandPrice", e.target.value)} placeholder="0.00" className={`${inputClasses} pl-7`} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="nameBrandPrice" className="block text-sm text-gray-600 mb-1.5">Price in CAD (optional)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input id="nameBrandPrice" type="number" min="0" max="10000" step="0.01" inputMode="decimal" value={form.nameBrandPrice} onChange={(e) => setField("nameBrandPrice", e.target.value)} placeholder="0.00" className={`${inputClasses} pl-7`} />
+              </div>
+              {fieldError("nameBrandPrice")}
+            </div>
+            <div>
+              <label htmlFor="nameBrandSize" className="block text-sm text-gray-600 mb-1.5">Package size (optional)</label>
+              <input id="nameBrandSize" type="text" maxLength={MAX.size} value={form.nameBrandSize} onChange={(e) => setField("nameBrandSize", e.target.value)} placeholder="e.g. 100 tablets, 1 kg, 2 L" className={inputClasses} />
+              {fieldError("nameBrandSize")}
             </div>
           </div>
         </fieldset>
@@ -147,19 +183,21 @@ export default function SubmitPage() {
             <option value="">Select a category...</option>
             {categories.map((cat) => (<option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>))}
           </select>
-          {errors.categoryId && <p className="text-red-600 text-xs mt-1">{errors.categoryId}</p>}
+          {fieldError("categoryId")}
         </div>
 
         <fieldset className="glass rounded-2xl p-6 space-y-4">
           <legend className="text-gray-900 font-semibold px-1">Initial Evidence <span className="text-gray-400 font-normal text-sm">(optional)</span></legend>
-          <p className="text-gray-500 text-sm">Add a note about why you think the generic is or isn&apos;t equivalent.</p>
+          <p className="text-gray-500 text-sm">Why do you think the store brand is or isn&apos;t equivalent? Facts and your own experience only, please.</p>
           <div>
             <label htmlFor="evidenceTitle" className="block text-sm text-gray-600 mb-1.5">Title</label>
-            <input id="evidenceTitle" type="text" value={form.evidenceTitle} onChange={(e) => setField("evidenceTitle", e.target.value)} placeholder="e.g. Same active ingredients" className={inputClasses} />
+            <input id="evidenceTitle" type="text" maxLength={MAX.title} value={form.evidenceTitle} onChange={(e) => setField("evidenceTitle", e.target.value)} placeholder="e.g. Same medicinal ingredient and strength" className={inputClasses} />
+            {fieldError("evidenceTitle")}
           </div>
           <div>
             <label htmlFor="evidenceContent" className="block text-sm text-gray-600 mb-1.5">Details</label>
-            <textarea id="evidenceContent" value={form.evidenceContent} onChange={(e) => setField("evidenceContent", e.target.value)} placeholder="Describe your evidence or experience..." rows={4} className={`${inputClasses} resize-y`} />
+            <textarea id="evidenceContent" maxLength={MAX.content} value={form.evidenceContent} onChange={(e) => setField("evidenceContent", e.target.value)} placeholder="Describe your evidence or experience..." rows={4} className={`${inputClasses} resize-y`} />
+            {fieldError("evidenceContent")}
           </div>
         </fieldset>
 

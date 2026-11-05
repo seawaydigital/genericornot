@@ -6,8 +6,16 @@ import { Button } from "@/components/ui/Button";
 interface Comparison {
   id: string; genericProductName: string; genericBrand: string; genericStore: string;
   nameBrandProductName: string; nameBrand: string; createdAt: string | Date;
+  genericPrice?: number | null; genericSize?: string | null;
+  nameBrandPrice?: number | null; nameBrandSize?: string | null;
   category: { name: string; icon: string } | null;
-  submittedBy: { name: string; username: string } | null;
+  submittedBy: { name?: string | null; username: string } | null;
+  evidence?: { id: string; title: string; content: string }[];
+}
+
+function priceLine(price?: number | null, size?: string | null) {
+  if (price == null && !size) return "no price";
+  return [price != null ? "$" + price.toFixed(2) : null, size].filter(Boolean).join(" · ");
 }
 
 interface SubmissionQueueProps { initialComparisons: Comparison[]; }
@@ -39,7 +47,7 @@ export function SubmissionQueue({ initialComparisons }: SubmissionQueueProps) {
   }
 
   function formatDate(date: string | Date) {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(date));
+    return new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" }).format(new Date(date));
   }
 
   if (comparisons.length === 0) {
@@ -67,12 +75,29 @@ export function SubmissionQueue({ initialComparisons }: SubmissionQueueProps) {
                 <span>{comp.genericBrand} ({comp.genericStore}) vs {comp.nameBrand}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-gray-400">
-                <span>Submitted by {comp.submittedBy ? (<span className="text-gray-500">{comp.submittedBy.name} (@{comp.submittedBy.username})</span>) : "anonymous"}</span>
+                <span>Submitted by {comp.submittedBy ? (<span className="text-gray-500">{comp.submittedBy.name ? comp.submittedBy.name + " " : ""}(@{comp.submittedBy.username})</span>) : "anonymous"}</span>
                 <span>&middot;</span>
                 <span>{formatDate(comp.createdAt)}</span>
               </div>
             </div>
           </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 text-xs text-gray-600">
+            <p><span className="text-gray-400">Store brand:</span> {priceLine(comp.genericPrice, comp.genericSize)}</p>
+            <p><span className="text-gray-400">Name brand:</span> {priceLine(comp.nameBrandPrice, comp.nameBrandSize)}</p>
+          </div>
+
+          {comp.evidence && comp.evidence.length > 0 && (
+            <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-700 space-y-2">
+              <p className="font-medium text-gray-500 uppercase tracking-wider text-[10px]">Submitted evidence (approved with the comparison)</p>
+              {comp.evidence.map((ev) => (
+                <div key={ev.id}>
+                  <p className="font-medium">{ev.title}</p>
+                  <p className="whitespace-pre-line">{ev.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {rejectingId === comp.id && (
             <div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 interface FlagOutdatedButtonProps {
@@ -9,25 +10,28 @@ interface FlagOutdatedButtonProps {
 
 export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
   const { data: session } = useSession();
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error" | "signin">("idle");
   const [message, setMessage] = useState("");
 
   async function handleFlag() {
     if (!session?.user) {
-      setMessage("You must be signed in to flag a comparison.");
-      setStatus("error");
+      setStatus("signin");
       return;
     }
 
     setStatus("loading");
     try {
       const res = await fetch(`/api/comparisons/${slug}/flag`, { method: "POST" });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage(data.error ?? "Something went wrong.");
         setStatus("error");
       } else {
-        setMessage("Thanks for the report — we'll review this comparison.");
+        setMessage(
+          data.alreadyFlagged
+            ? "You've already reported this one — thanks, we'll review it."
+            : "Thanks for the report — we'll review this comparison."
+        );
         setStatus("done");
       }
     } catch {
@@ -37,9 +41,7 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
   }
 
   if (status === "done") {
-    return (
-      <p className="text-sm text-gray-500 italic">{message}</p>
-    );
+    return <p className="text-sm text-gray-500 italic" role="status">{message}</p>;
   }
 
   return (
@@ -47,12 +49,21 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
       <button
         onClick={handleFlag}
         disabled={status === "loading"}
-        className="text-xs text-gray-500 hover:text-amber-600 transition-colors disabled:opacity-50"
+        className="text-xs text-gray-500 hover:text-amber-700 underline-offset-2 hover:underline transition-colors disabled:opacity-50"
       >
-        {status === "loading" ? "Flagging…" : "Flag as outdated"}
+        {status === "loading" ? "Reporting…" : "Report outdated info"}
       </button>
-      {status === "error" && (
-        <p className="text-xs text-red-600">{message}</p>
+      {status === "error" && <p className="text-xs text-red-600" role="alert">{message}</p>}
+      {status === "signin" && (
+        <p className="text-xs text-gray-600">
+          <Link
+            href={`/auth/signin?callbackUrl=${encodeURIComponent(`/compare/${slug}`)}`}
+            className="text-[#0d1b4a] font-medium hover:underline"
+          >
+            Sign in
+          </Link>{" "}
+          to report outdated info.
+        </p>
       )}
     </div>
   );

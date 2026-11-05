@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_TAGLINE } from "@/lib/site";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -6,6 +7,7 @@ export function Footer() {
   const links = [
     { label: "About Us", href: "/about" },
     { label: "Contribute", href: "/submit" },
+    { label: "Contact", href: "/contact" },
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
   ];
@@ -18,17 +20,17 @@ export function Footer() {
             <span className="text-lg font-semibold text-[#0d1b4a] tracking-tight">
               Generic<span className="font-[var(--font-instrument)] italic"> Or </span>Not
             </span>
-            <p className="text-xs text-gray-400 uppercase tracking-widest">
-              The editorial truth in consumer advocacy
+            <p className="text-xs text-gray-500 uppercase tracking-widest text-center md:text-left">
+              {SITE_TAGLINE}
             </p>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-8">
+          <nav className="flex flex-wrap justify-center gap-x-8 gap-y-3" aria-label="Footer">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-xs text-gray-400 uppercase tracking-wider transition-colors hover:text-gray-600"
+                className="text-xs text-gray-500 uppercase tracking-wider transition-colors hover:text-gray-800"
               >
                 {link.label}
               </Link>
@@ -36,12 +38,16 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="mt-10 text-center">
-          <p className="text-xs text-gray-300 uppercase tracking-wider">
-            &copy; {currentYear} Generic Or Not. All trademarks belong to their respective owners.
+        <div className="mt-10 text-center space-y-1">
+          <p className="text-xs text-gray-500 uppercase tracking-wider">
+            &copy; {currentYear} GenericOrNot. Independent — not affiliated with any retailer or brand.
           </p>
-          <p className="text-[10px] text-gray-300 mt-1 uppercase tracking-widest">
-            Transparency is our only product.
+          <p className="text-[11px] text-gray-400">
+            Trademarks and brand names belong to their respective owners. Prices are approximate and in Canadian
+            dollars.
+          </p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest pt-1">
+            Made in Canada &middot; Transparency is our only product.
           </p>
         </div>
       </div>

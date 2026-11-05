@@ -28,11 +28,10 @@ describe("Navbar", () => {
     expect(logo).toHaveAttribute("href", "/");
   });
 
-  it("renders Explore nav link", () => {
+  it("renders Best Swaps and New nav links", () => {
     render(<Navbar />);
-    const link = screen.getAllByRole("link", { name: /explore/i })[0];
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "/categories");
+    expect(screen.getAllByRole("link", { name: /best swaps/i })[0]).toHaveAttribute("href", "/top-rated");
+    expect(screen.getAllByRole("link", { name: /^new$/i })[0]).toHaveAttribute("href", "/new");
   });
 
   it("renders Categories nav link", () => {

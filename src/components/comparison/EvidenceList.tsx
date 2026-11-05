@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDate } from "@/lib/format";
 
 interface EvidenceUser {
   username: string;
@@ -39,16 +40,16 @@ const evidenceTypeConfig: Record<string, { label: string; color: string }> = {
     color: "bg-red-50 text-red-700",
   },
   OTHER: {
-    label: "Other",
-    color: "bg-gray-100 text-gray-500",
+    label: "Experience",
+    color: "bg-gray-100 text-gray-600",
   },
 };
 
-const fallbackType = { label: "Evidence", color: "bg-gray-100 text-gray-500" };
+const fallbackType = { label: "Evidence", color: "bg-gray-100 text-gray-600" };
 
 const confidenceConfig: Record<string, { label: string; color: string }> = {
   CONFIRMED: {
-    label: "\u2713 Confirmed",
+    label: "✓ Confirmed",
     color: "bg-emerald-50 text-emerald-700",
   },
   COMMUNITY: {
@@ -57,13 +58,21 @@ const confidenceConfig: Record<string, { label: string; color: string }> = {
   },
   UNVERIFIED: {
     label: "Unverified",
-    color: "bg-gray-100 text-gray-500",
+    color: "bg-gray-100 text-gray-600",
   },
 };
 
-function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+function hostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+/** Only render links we know are http(s); anything else is shown as text. */
+function isHttpUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
 }
 
 export function EvidenceList({ evidence }: EvidenceListProps) {
@@ -73,7 +82,7 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
     return (
       <div className="glass rounded-2xl p-6">
         <h2 className="text-gray-900 font-semibold text-base mb-3">Evidence</h2>
-        <p className="text-gray-400 text-sm">No evidence submitted yet.</p>
+        <p className="text-gray-500 text-sm">No evidence yet. Know something about how these compare? Add it below.</p>
       </div>
     );
   }
@@ -85,15 +94,16 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
     <div className="glass rounded-2xl p-6">
       <h2 className="text-gray-900 font-semibold text-base mb-4">
         Evidence{" "}
-        <span className="text-gray-400 font-normal text-sm">({evidence.length})</span>
+        <span className="text-gray-500 font-normal text-sm">({evidence.length})</span>
       </h2>
       <div className="flex flex-col gap-4">
         {visible.map((entry) => {
           const typeConfig = evidenceTypeConfig[entry.type] ?? fallbackType;
           const confKey = entry.confidence ?? "UNVERIFIED";
           const conf = confidenceConfig[confKey] ?? confidenceConfig.UNVERIFIED;
+          const host = entry.url && isHttpUrl(entry.url) ? hostname(entry.url) : null;
           return (
-            <div key={entry.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+            <article key={entry.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeConfig.color}`}
@@ -105,24 +115,26 @@ export function EvidenceList({ evidence }: EvidenceListProps) {
                 >
                   {conf.label}
                 </span>
-                <span className="text-gray-400 text-xs">
+                <span className="text-gray-500 text-xs">
                   by{" "}
-                  <span className="text-gray-500 font-medium">{entry.user.username}</span>
+                  <span className="text-gray-600 font-medium">{entry.user.username}</span>
                 </span>
-                <span className="text-gray-300 text-xs">{formatDate(entry.createdAt)}</span>
+                <span className="text-gray-400 text-xs">{formatDate(entry.createdAt)}</span>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed">{entry.content}</p>
-              {entry.url && (
+              <h3 className="text-gray-900 text-sm font-medium mb-1">{entry.title}</h3>
+              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{entry.content}</p>
+              {entry.url && host && (
                 <a
                   href={entry.url}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  // User-supplied link: no referrer, no SEO credit, no opener access.
+                  rel="nofollow ugc noopener noreferrer"
                   className="inline-block mt-2 text-[#0d1b4a] hover:text-[#1e3a7a] text-xs transition-colors"
                 >
-                  View source &rarr;
+                  View source ({host}) &rarr;
                 </a>
               )}
-            </div>
+            </article>
           );
         })}
       </div>

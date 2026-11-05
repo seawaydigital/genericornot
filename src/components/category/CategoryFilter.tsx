@@ -2,17 +2,19 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
+import { VERDICT_LABELS } from "@/lib/verdict-labels";
 
 interface CategoryFilterProps {
   currentVerdict?: string;
   currentSort?: string;
 }
 
+// Filters use the same wording as the verdict badges on the cards.
 const VERDICT_FILTERS = [
   { label: "All", value: "" },
-  { label: "Same Quality", value: "SAME_QUALITY" },
-  { label: "Close Enough", value: "CLOSE_ENOUGH" },
-  { label: "Not Worth It", value: "NOT_WORTH_IT" },
+  { label: VERDICT_LABELS.SAME_QUALITY, value: "SAME_QUALITY" },
+  { label: VERDICT_LABELS.CLOSE_ENOUGH, value: "CLOSE_ENOUGH" },
+  { label: VERDICT_LABELS.NOT_WORTH_IT, value: "NOT_WORTH_IT" },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -65,7 +67,7 @@ export function CategoryFilter({ currentVerdict = "", currentSort = "totalVotes"
       </div>
       <div className="flex-1 hidden sm:block" />
       <div className="flex items-center gap-2">
-        <label htmlFor="sort-select" className="text-gray-400 text-sm whitespace-nowrap">Sort by:</label>
+        <label htmlFor="sort-select" className="text-gray-500 text-sm whitespace-nowrap">Sort by:</label>
         <select
           id="sort-select" value={currentSort}
           onChange={(e) => updateParams("sort", e.target.value)}

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { LIMITS } from "@/lib/validation";
 
 type EvidenceType =
   | "MANUFACTURER_INFO"
@@ -11,25 +13,27 @@ type EvidenceType =
   | "OTHER";
 
 const EVIDENCE_TYPE_OPTIONS: { value: EvidenceType; label: string }[] = [
-  { value: "MANUFACTURER_INFO", label: "Manufacturer Info" },
+  { value: "OTHER", label: "Personal experience" },
   { value: "INGREDIENT_COMPARISON", label: "Ingredient Comparison" },
-  { value: "PHOTO", label: "Photo" },
+  { value: "MANUFACTURER_INFO", label: "Manufacturer Info" },
   { value: "VIDEO_LINK", label: "Video Link" },
-  { value: "OTHER", label: "Other" },
+  { value: "PHOTO", label: "Photo (link)" },
 ];
 
 interface EvidenceFormProps {
   comparisonId: string;
+  /** Used to send signed-out visitors back here after they sign in. */
+  slug?: string;
   onEvidenceAdded?: () => void;
 }
 
 const inputClasses =
   "w-full bg-white border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#0d1b4a]/30 focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200";
 
-export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProps) {
+export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFormProps) {
   const { data: session, status } = useSession();
 
-  const [type, setType] = useState<EvidenceType>("MANUFACTURER_INFO");
+  const [type, setType] = useState<EvidenceType>("OTHER");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [url, setUrl] = useState("");
@@ -38,13 +42,16 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (status === "loading" || status === "unauthenticated" || !session) {
+    const signInHref = slug
+      ? `/auth/signin?callbackUrl=${encodeURIComponent(`/compare/${slug}`)}`
+      : "/auth/signin";
     return (
       <div className="glass rounded-2xl p-6">
         <h2 className="text-gray-900 font-semibold text-base mb-3">Add Evidence</h2>
         <p className="text-gray-500 text-sm">
-          <a href="/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
+          <Link href={signInHref} className="text-[#0d1b4a] hover:underline font-medium">
             Sign in to contribute evidence
-          </a>{" "}
+          </Link>{" "}
           on this comparison.
         </p>
       </div>
@@ -64,17 +71,17 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
         body: JSON.stringify({ comparisonId, type, title, content, url }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json();
         setErrorMessage(data.error ?? "Failed to submit evidence. Please try again.");
         return;
       }
 
-      setType("MANUFACTURER_INFO");
+      setType("OTHER");
       setTitle("");
       setContent("");
       setUrl("");
-      setSuccessMessage("Evidence submitted!");
+      setSuccessMessage(data.message ?? "Thanks! Your evidence will appear once a moderator reviews it.");
       onEvidenceAdded?.();
     } catch {
       setErrorMessage("Network error. Please try again.");
@@ -85,7 +92,11 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
 
   return (
     <div className="glass rounded-2xl p-6">
-      <h2 className="text-gray-900 font-semibold text-base mb-4">Add Evidence</h2>
+      <h2 className="text-gray-900 font-semibold text-base mb-1">Add Evidence</h2>
+      <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+        Share what you know: ingredient labels, who makes it, or how it held up for you. Stick to facts and your own
+        experience — submissions are reviewed before they appear.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -101,22 +112,49 @@ export function EvidenceForm({ comparisonId, onEvidenceAdded }: EvidenceFormProp
 
         <div>
           <label htmlFor="evidence-title" className="block text-gray-600 text-sm font-medium mb-1.5">Title</label>
-          <input id="evidence-title" type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className={inputClasses} placeholder="Brief description of evidence" />
+          <input
+            id="evidence-title"
+            type="text"
+            required
+            maxLength={LIMITS.evidenceTitle}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={inputClasses}
+            placeholder="e.g. Same medicinal ingredient and strength"
+          />
         </div>
 
         <div>
           <label htmlFor="evidence-content" className="block text-gray-600 text-sm font-medium mb-1.5">Content</label>
-          <textarea id="evidence-content" required rows={4} value={content} onChange={(e) => setContent(e.target.value)} className={`${inputClasses} resize-vertical`} placeholder="Describe your evidence in detail..." />
+          <textarea
+            id="evidence-content"
+            required
+            rows={4}
+            maxLength={LIMITS.evidenceContent}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className={`${inputClasses} resize-y`}
+            placeholder="Describe your evidence in detail..."
+          />
         </div>
 
         <div>
           <label htmlFor="evidence-url" className="block text-gray-600 text-sm font-medium mb-1.5">
-            URL <span className="text-gray-400 font-normal">(optional)</span>
+            URL <span className="text-gray-400 font-normal">{type === "VIDEO_LINK" ? "(required)" : "(optional)"}</span>
           </label>
-          <input id="evidence-url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} className={inputClasses} placeholder="Link to source, video, etc." />
+          <input
+            id="evidence-url"
+            type="url"
+            maxLength={LIMITS.url}
+            required={type === "VIDEO_LINK"}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className={inputClasses}
+            placeholder="https://… link to a source, label photo or video"
+          />
         </div>
 
-        {successMessage && <p className="text-emerald-700 text-sm font-medium">{successMessage}</p>}
+        {successMessage && <p className="text-emerald-700 text-sm font-medium" role="status">{successMessage}</p>}
         {errorMessage && <p className="text-red-600 text-sm" role="alert">{errorMessage}</p>}
 
         <button

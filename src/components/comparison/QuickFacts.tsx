@@ -27,7 +27,7 @@ function bestConfidence(evidences: Evidence[]): ConfidenceLevel {
 const confidenceBadge: Record<ConfidenceLevel, { label: string; color: string }> = {
   CONFIRMED: { label: "Confirmed", color: "text-emerald-700" },
   COMMUNITY: { label: "Community", color: "text-blue-700" },
-  UNVERIFIED: { label: "Unverified", color: "text-gray-400" },
+  UNVERIFIED: { label: "Unverified", color: "text-gray-500" },
 };
 
 export function QuickFacts({ evidence }: QuickFactsProps) {
@@ -37,7 +37,7 @@ export function QuickFacts({ evidence }: QuickFactsProps) {
 
   const mfrEvidence = byType("MANUFACTURER_INFO");
   if (mfrEvidence.length > 0) {
-    facts.push({ label: "Same Manufacturer", icon: "\u2713", confidence: bestConfidence(mfrEvidence) });
+    facts.push({ label: "Manufacturer Info", icon: "\u2713", confidence: bestConfidence(mfrEvidence) });
   }
   const ingEvidence = byType("INGREDIENT_COMPARISON");
   if (ingEvidence.length > 0) {
@@ -52,7 +52,7 @@ export function QuickFacts({ evidence }: QuickFactsProps) {
     return (
       <div className="glass rounded-2xl p-6">
         <h2 className="text-gray-900 font-semibold text-base mb-3">Quick Facts</h2>
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-500 text-sm">
           No details yet — be the first to contribute!
         </p>
       </div>

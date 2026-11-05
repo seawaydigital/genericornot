@@ -4,9 +4,9 @@ import { VerdictBadge } from "../VerdictBadge";
 
 describe("VerdictBadge", () => {
   describe("renders correct label for each verdict", () => {
-    it("renders 'Same Quality' for SAME_QUALITY", () => {
+    it("renders 'Generic Worth It' for SAME_QUALITY", () => {
       render(<VerdictBadge verdict="SAME_QUALITY" />);
-      expect(screen.getByText("Same Quality")).toBeInTheDocument();
+      expect(screen.getByText("Generic Worth It")).toBeInTheDocument();
     });
 
     it("renders 'Close Enough' for CLOSE_ENOUGH", () => {
@@ -14,19 +14,19 @@ describe("VerdictBadge", () => {
       expect(screen.getByText("Close Enough")).toBeInTheDocument();
     });
 
-    it("renders 'Not Worth It' for NOT_WORTH_IT", () => {
+    it("renders 'Stick with Brand' for NOT_WORTH_IT", () => {
       render(<VerdictBadge verdict="NOT_WORTH_IT" />);
-      expect(screen.getByText("Not Worth It")).toBeInTheDocument();
+      expect(screen.getByText("Stick with Brand")).toBeInTheDocument();
     });
 
-    it("renders 'Mixed' for MIXED", () => {
+    it("renders 'Mixed Reviews' for MIXED", () => {
       render(<VerdictBadge verdict="MIXED" />);
-      expect(screen.getByText("Mixed")).toBeInTheDocument();
+      expect(screen.getByText("Mixed Reviews")).toBeInTheDocument();
     });
 
-    it("renders 'Pending' for PENDING", () => {
+    it("renders 'Awaiting Votes' for PENDING", () => {
       render(<VerdictBadge verdict="PENDING" />);
-      expect(screen.getByText("Pending")).toBeInTheDocument();
+      expect(screen.getByText("Awaiting Votes")).toBeInTheDocument();
     });
   });
 

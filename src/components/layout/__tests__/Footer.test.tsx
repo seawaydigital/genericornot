@@ -18,7 +18,12 @@ describe("Footer", () => {
 
   it("renders the tagline", () => {
     render(<Footer />);
-    expect(screen.getByText(/editorial truth in consumer advocacy/i)).toBeInTheDocument();
+    expect(screen.getByText(/canadians compare notes/i)).toBeInTheDocument();
+  });
+
+  it("states prices are approximate Canadian dollars", () => {
+    render(<Footer />);
+    expect(screen.getByText(/approximate and in Canadian dollars/i)).toBeInTheDocument();
   });
 
   it("renders copyright with current year", () => {

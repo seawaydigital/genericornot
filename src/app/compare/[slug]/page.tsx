@@ -1,112 +1,92 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
-import { authOptions } from "@/lib/auth";
-import { computeSavings } from "@/lib/verdict";
+import { computeSavings, tallyVotes } from "@/lib/verdict";
+import { decimalToNumber } from "@/lib/comparisons";
 import { getComparisonMetadata, getComparisonJsonLd } from "@/lib/seo";
 import { BrandHero } from "@/components/comparison/BrandHero";
 import { GenericAlternative } from "@/components/comparison/GenericAlternative";
+import { PriceComparison } from "@/components/comparison/PriceComparison";
+import { HealthNotice } from "@/components/comparison/HealthNotice";
 import { QuickFacts } from "@/components/comparison/QuickFacts";
 import { EvidenceList } from "@/components/comparison/EvidenceList";
-import { VoteButtons } from "@/components/comparison/VoteButtons";
-import { VoteBreakdown } from "@/components/comparison/VoteBreakdown";
+import { VotePanel } from "@/components/comparison/VotePanel";
 import { EvidenceForm } from "@/components/comparison/EvidenceForm";
+import { AdminTools } from "@/components/comparison/AdminTools";
 
+// Cached and shared by every visitor; per-user state (your vote) loads
+// client-side, and votes/evidence/admin actions revalidate this path.
 export const revalidate = 60;
+
+// Render each comparison on its first visit, then serve it from cache (ISR).
+// Without this, a dynamic [slug] route is rendered on every request.
+export async function generateStaticParams() {
+  return [];
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getComparison(slug: string) {
+const getComparison = cache(async (slug: string) => {
   try {
     const comparison = await prisma.productComparison.findUnique({
       where: { slug },
       include: {
         category: true,
         evidence: {
+          where: { status: "APPROVED" },
           include: { user: { select: { username: true } } },
           orderBy: { createdAt: "desc" },
         },
-        votes: {
-          select: { value: true },
-        },
       },
     });
-    return comparison;
+    if (!comparison || comparison.status !== "APPROVED") return null;
+
+    const voteGroups = await prisma.vote.groupBy({
+      by: ["value"],
+      where: { comparisonId: comparison.id },
+      _count: true,
+    });
+    const counts = tallyVotes(voteGroups.map((g) => ({ value: g.value, count: g._count })));
+
+    return { comparison, counts };
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const comparison = await getComparison(slug);
+  const data = await getComparison(slug);
 
-  if (!comparison || comparison.status !== "APPROVED") {
+  if (!data) {
     return { title: "Comparison Not Found — GenericOrNot" };
   }
 
+  const { comparison } = data;
   return getComparisonMetadata({
     ...comparison,
-    genericPrice: comparison.genericPrice ? Number(comparison.genericPrice) : null,
-    nameBrandPrice: comparison.nameBrandPrice ? Number(comparison.nameBrandPrice) : null,
+    genericPrice: decimalToNumber(comparison.genericPrice),
+    nameBrandPrice: decimalToNumber(comparison.nameBrandPrice),
   });
 }
 
 export default async function ComparisonPage({ params }: PageProps) {
   const { slug } = await params;
-  const comparison = await getComparison(slug);
+  const data = await getComparison(slug);
 
-  if (!comparison || comparison.status !== "APPROVED") {
+  if (!data) {
     notFound();
   }
 
-  const genericPrice = comparison.genericPrice ? Number(comparison.genericPrice) : null;
-  const nameBrandPrice = comparison.nameBrandPrice ? Number(comparison.nameBrandPrice) : null;
-  const savings = computeSavings(genericPrice, nameBrandPrice);
-
-  function deriveVoteCounts(verdict: string, total: number) {
-    if (total === 0) return { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
-    let sq: number, ce: number, nwi: number;
-    if (verdict === "SAME_QUALITY") {
-      sq = Math.round(total * 0.70); ce = Math.round(total * 0.20); nwi = total - sq - ce;
-    } else if (verdict === "CLOSE_ENOUGH") {
-      ce = Math.round(total * 0.50); sq = Math.round(total * 0.25); nwi = total - sq - ce;
-    } else if (verdict === "NOT_WORTH_IT") {
-      nwi = Math.round(total * 0.70); ce = Math.round(total * 0.20); sq = total - nwi - ce;
-    } else {
-      sq = Math.round(total / 3); ce = Math.round(total / 3); nwi = total - sq - ce;
-    }
-    return { sameQuality: Math.max(0, sq), closeEnough: Math.max(0, ce), notWorthIt: Math.max(0, nwi) };
-  }
-
-  const liveVoteCounts = { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
-  for (const vote of comparison.votes) {
-    if (vote.value === "SAME_QUALITY") liveVoteCounts.sameQuality++;
-    else if (vote.value === "CLOSE_ENOUGH") liveVoteCounts.closeEnough++;
-    else if (vote.value === "NOT_WORTH_IT") liveVoteCounts.notWorthIt++;
-  }
-  const hasLiveVotes = comparison.votes.length > 0;
-  const voteCounts = hasLiveVotes
-    ? liveVoteCounts
-    : deriveVoteCounts(comparison.verdict, comparison.totalVotes);
-
-  const session = await getServerSession(authOptions);
-  let userVote: string | null = null;
-  if (session?.user?.id) {
-    const vote = await prisma.vote.findUnique({
-      where: {
-        userId_comparisonId: {
-          userId: session.user.id,
-          comparisonId: comparison.id,
-        },
-      },
-      select: { value: true },
-    });
-    userVote = vote?.value ?? null;
-  }
+  const { comparison, counts } = data;
+  const genericPrice = decimalToNumber(comparison.genericPrice);
+  const nameBrandPrice = decimalToNumber(comparison.nameBrandPrice);
+  const savings = computeSavings(genericPrice, nameBrandPrice, comparison.genericSize, comparison.nameBrandSize);
+  const categoryIcon = comparison.category?.icon ?? "\u{1F4E6}";
 
   const evidence = comparison.evidence.map((e) => ({
     id: e.id,
@@ -115,96 +95,99 @@ export default async function ComparisonPage({ params }: PageProps) {
     content: e.content,
     url: e.url ?? null,
     confidence: e.confidence,
-    createdAt: e.createdAt,
+    createdAt: e.createdAt.toISOString(),
     user: { username: e.user.username },
   }));
 
   const jsonLd = getComparisonJsonLd({
     ...comparison,
-    genericPrice: genericPrice,
-    nameBrandPrice: nameBrandPrice,
+    genericPrice,
+    nameBrandPrice,
   });
 
   return (
     <div className="min-h-screen">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // JSON.stringify doesn't escape "<", so a product name containing
+        // "</script>" could break out of the tag. Escape it.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <div className="mx-auto max-w-6xl px-4 md:px-6 py-12">
-        {/* 2-column layout on desktop */}
-        <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          {/* Main content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Brand hero */}
+      <div className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-12">
+        {comparison.category && (
+          <nav aria-label="Breadcrumb" className="mb-4 text-xs text-gray-500">
+            <Link href="/categories" className="hover:text-gray-800">Categories</Link>
+            <span className="mx-1.5" aria-hidden="true">/</span>
+            <Link href={`/categories/${comparison.category.slug}`} className="hover:text-gray-800">
+              {comparison.category.name}
+            </Link>
+          </nav>
+        )}
+
+        {/* One DOM order for every screen size: on mobile the vote card sits
+            right after the products; on desktop grid placement moves it into
+            a sticky sidebar. A single VotePanel keeps one source of truth. */}
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
+          <div className="lg:col-span-2 space-y-6">
             <BrandHero
               nameBrandProductName={comparison.nameBrandProductName}
               nameBrand={comparison.nameBrand}
               nameBrandPrice={nameBrandPrice}
+              nameBrandSize={comparison.nameBrandSize}
               verdict={comparison.verdict}
+              editorialVerdict={comparison.editorialVerdict}
+              editorialNote={comparison.editorialNote}
               confidenceScore={comparison.confidenceScore}
-              totalVotes={comparison.totalVotes}
+              totalVotes={counts.sameQuality + counts.closeEnough + counts.notWorthIt}
               savings={savings}
-              categoryIcon={comparison.category?.icon ?? "\u{1F4E6}"}
+              categoryIcon={categoryIcon}
               lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
               flaggedOutdated={comparison.flaggedOutdated}
               slug={comparison.slug}
             />
 
-            {/* Generic alternative */}
             <GenericAlternative
               genericProductName={comparison.genericProductName}
               genericBrand={comparison.genericBrand}
               genericStore={comparison.genericStore}
               genericPrice={genericPrice}
-              categoryIcon={comparison.category?.icon ?? "\u{1F4E6}"}
+              genericSize={comparison.genericSize}
+              categoryIcon={categoryIcon}
             />
-
-            {/* Vote breakdown inline */}
-            {comparison.totalVotes > 0 && (
-              <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                <div className="glass rounded-2xl p-3">
-                  <p className="text-emerald-700 font-semibold text-sm">{voteCounts.sameQuality}</p>
-                  <p className="text-gray-400 mt-0.5">Same Quality</p>
-                </div>
-                <div className="glass rounded-2xl p-3">
-                  <p className="text-amber-700 font-semibold text-sm">{voteCounts.closeEnough}</p>
-                  <p className="text-gray-400 mt-0.5">Close Enough</p>
-                </div>
-                <div className="glass rounded-2xl p-3">
-                  <p className="text-red-700 font-semibold text-sm">{voteCounts.notWorthIt}</p>
-                  <p className="text-gray-400 mt-0.5">Not Worth It</p>
-                </div>
-              </div>
-            )}
-
-            {/* Evidence list */}
-            <EvidenceList evidence={evidence} />
-
-            {/* Evidence submission form */}
-            <EvidenceForm comparisonId={comparison.id} />
           </div>
 
-          {/* Sidebar */}
-          <aside className="mt-8 lg:mt-0 space-y-6">
-            {/* Voting card */}
-            <div className="glass rounded-2xl p-6 space-y-5 lg:sticky lg:top-20">
-              <VoteButtons
+          <aside className="space-y-6 lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-20">
+            <div className="glass rounded-2xl p-6">
+              <VotePanel
                 comparisonId={comparison.id}
-                initialVote={userVote}
-                initialVoteCounts={voteCounts}
-              />
-              <VoteBreakdown
-                sameQuality={voteCounts.sameQuality}
-                closeEnough={voteCounts.closeEnough}
-                notWorthIt={voteCounts.notWorthIt}
-                totalVotes={comparison.totalVotes}
+                slug={comparison.slug}
+                genericBrand={comparison.genericBrand}
+                nameBrand={comparison.nameBrand}
+                initialCounts={counts}
               />
             </div>
 
-            {/* Quick facts */}
             <QuickFacts evidence={evidence} />
           </aside>
+
+          <div className="lg:col-span-2 space-y-6">
+            <PriceComparison
+              genericBrand={comparison.genericBrand}
+              genericPrice={genericPrice}
+              genericSize={comparison.genericSize}
+              nameBrand={comparison.nameBrand}
+              nameBrandPrice={nameBrandPrice}
+              nameBrandSize={comparison.nameBrandSize}
+            />
+
+            <HealthNotice categorySlug={comparison.category?.slug} />
+
+            <EvidenceList evidence={evidence} />
+
+            <EvidenceForm comparisonId={comparison.id} slug={comparison.slug} />
+
+            <AdminTools comparisonId={comparison.id} />
+          </div>
         </div>
       </div>
     </div>

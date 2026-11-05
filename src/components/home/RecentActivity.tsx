@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatRelativeTime } from "@/lib/format";
 
 interface RecentEvidence {
   id: string; title: string; type: string; createdAt: Date;
@@ -12,19 +13,6 @@ interface RecentComparison {
 interface RecentActivityProps {
   evidence: RecentEvidence[];
   comparisons: RecentComparison[];
-}
-
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - new Date(date).getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(date).toLocaleDateString();
 }
 
 type ActivityItem =
@@ -55,7 +43,7 @@ export function RecentActivity({ evidence, comparisons }: RecentActivityProps) {
 
       {items.length === 0 ? (
         <div className="mt-8 glass rounded-2xl p-8 text-center">
-          <p className="text-gray-400 text-sm">No activity yet. Be the first to contribute!</p>
+          <p className="text-gray-500 text-sm">No activity yet. Be the first to contribute!</p>
         </div>
       ) : (
         <div className="mt-8 glass rounded-2xl divide-y divide-gray-100">
@@ -75,7 +63,7 @@ export function RecentActivity({ evidence, comparisons }: RecentActivityProps) {
                   {item.text}
                 </Link>
               </div>
-              <time dateTime={new Date(item.timestamp).toISOString()} className="shrink-0 text-xs text-gray-300">
+              <time dateTime={new Date(item.timestamp).toISOString()} className="shrink-0 text-xs text-gray-400">
                 {formatRelativeTime(item.timestamp)}
               </time>
             </div>

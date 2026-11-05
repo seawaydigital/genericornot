@@ -11,10 +11,13 @@ interface PopularChip {
 interface SearchBarProps {
   popular?: PopularChip[];
   className?: string;
+  /** Pre-fill the box, e.g. with the current query on the results page. */
+  defaultValue?: string;
+  autoFocus?: boolean;
 }
 
-export function SearchBar({ popular, className = "" }: SearchBarProps) {
-  const [query, setQuery] = useState("");
+export function SearchBar({ popular, className = "", defaultValue = "", autoFocus = false }: SearchBarProps) {
+  const [query, setQuery] = useState(defaultValue);
   const router = useRouter();
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -48,11 +51,17 @@ export function SearchBar({ popular, className = "" }: SearchBarProps) {
               />
             </svg>
           </div>
+          <label htmlFor="site-search" className="sr-only">
+            Search products and brands
+          </label>
           <input
+            id="site-search"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Find your favorite generic (e.g. Ibuprofen, Greek Yogurt)..."
+            autoFocus={autoFocus}
+            maxLength={100}
+            placeholder="Search a product or brand — e.g. Advil, Kraft Dinner, butter"
             className="block w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:border-[#0d1b4a]/30 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200"
           />
         </div>
@@ -64,7 +73,8 @@ export function SearchBar({ popular, className = "" }: SearchBarProps) {
             <button
               key={chip.query}
               onClick={() => handleChipClick(chip.query)}
-              className="rounded-full bg-gray-100 px-3.5 py-1 text-sm text-gray-500 transition-all duration-200 hover:bg-gray-200 hover:text-gray-700"
+              type="button"
+              className="rounded-full bg-gray-100 px-3.5 py-1 text-sm text-gray-600 transition-all duration-200 hover:bg-gray-200 hover:text-gray-800"
             >
               {chip.label}
             </button>

@@ -30,16 +30,16 @@ const comparisons = [
 ];
 
 describe("TrendingSection", () => {
-  it("renders the section heading as Popular Products", () => {
+  it("renders the section heading as Popular Swaps", () => {
     render(<TrendingSection comparisons={comparisons} />);
-    expect(screen.getByRole("heading", { name: /popular products/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /popular swaps/i })).toBeInTheDocument();
   });
 
   it("renders the View all link", () => {
     render(<TrendingSection comparisons={comparisons} />);
     const link = screen.getByRole("link", { name: /view all/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "/categories");
+    expect(link).toHaveAttribute("href", "/top-rated");
   });
 
   it("renders ProductCards for each comparison with brand name", () => {

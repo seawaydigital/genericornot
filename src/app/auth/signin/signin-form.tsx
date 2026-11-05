@@ -14,12 +14,16 @@ type Props = {
    * a new provider in `src/lib/auth.ts` is enough to make its button appear.
    */
   availableProviders: string[];
+  /** Same-site path to return to after sign-in (already validated). */
+  callbackUrl?: string;
+  errorMessage?: string | null;
 };
 
-export function SignInForm({ availableProviders }: Props) {
+export function SignInForm({ availableProviders, callbackUrl = "/", errorMessage = null }: Props) {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const has = (id: string) => availableProviders.includes(id);
   const emailEnabled = has("email");
@@ -35,9 +39,13 @@ export function SignInForm({ availableProviders }: Props) {
     e.preventDefault();
     if (!email.trim()) return;
     setIsLoading(true);
-    await signIn("email", { email: email.trim(), redirect: false });
-    setEmailSent(true);
+    const result = await signIn("email", { email: email.trim(), redirect: false, callbackUrl });
     setIsLoading(false);
+    if (result?.error) {
+      setEmailError("We couldn't send the sign-in email. Please try again in a minute.");
+      return;
+    }
+    setEmailSent(true);
   }
 
   if (emailSent) {
@@ -74,9 +82,16 @@ export function SignInForm({ availableProviders }: Props) {
           </Link>
           <h1 className="mt-6 text-xl font-bold text-gray-900">Sign in to your account</h1>
           <p className="mt-2 text-gray-500 text-sm">
-            Vote on comparisons, submit products, and contribute evidence.
+            Vote on comparisons, submit products, and contribute evidence. Your public profile shows a
+            nickname, never your real name.
           </p>
         </div>
+
+        {(errorMessage || emailError) && (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {emailError ?? errorMessage}
+          </div>
+        )}
 
         {/* If no auth is configured at all, surface a helpful message */}
         {!hasAnyOAuth && !emailEnabled && (
@@ -89,7 +104,7 @@ export function SignInForm({ availableProviders }: Props) {
         <div className="space-y-3">
           {has("google") && (
             <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
+              onClick={() => signIn("google", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -104,7 +119,7 @@ export function SignInForm({ availableProviders }: Props) {
 
           {has("azure-ad") && (
             <button
-              onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
+              onClick={() => signIn("azure-ad", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300"
             >
               <svg className="w-5 h-5" viewBox="0 0 23 23" aria-hidden="true">
@@ -120,7 +135,7 @@ export function SignInForm({ availableProviders }: Props) {
 
           {has("apple") && (
             <button
-              onClick={() => signIn("apple", { callbackUrl: "/" })}
+              onClick={() => signIn("apple", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-gray-900"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
@@ -132,7 +147,7 @@ export function SignInForm({ availableProviders }: Props) {
 
           {has("facebook") && (
             <button
-              onClick={() => signIn("facebook", { callbackUrl: "/" })}
+              onClick={() => signIn("facebook", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl bg-[#1877f2] px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#166fe5]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
@@ -144,7 +159,7 @@ export function SignInForm({ availableProviders }: Props) {
 
           {has("github") && (
             <button
-              onClick={() => signIn("github", { callbackUrl: "/" })}
+              onClick={() => signIn("github", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-gray-800"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
@@ -156,7 +171,7 @@ export function SignInForm({ availableProviders }: Props) {
 
           {has("twitter") && (
             <button
-              onClick={() => signIn("twitter", { callbackUrl: "/" })}
+              onClick={() => signIn("twitter", { callbackUrl })}
               className="w-full flex items-center justify-center gap-3 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-gray-900"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">

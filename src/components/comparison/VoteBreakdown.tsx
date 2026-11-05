@@ -1,3 +1,5 @@
+import { VOTE_LABELS } from "@/lib/verdict-labels";
+
 interface VoteBreakdownProps {
   sameQuality: number;
   closeEnough: number;
@@ -13,52 +15,43 @@ export function VoteBreakdown({
 }: VoteBreakdownProps) {
   const total = totalVotes || 0;
 
-  const sameQualityPct = total > 0 ? Math.round((sameQuality / total) * 100) : 0;
-  const closeEnoughPct = total > 0 ? Math.round((closeEnough / total) * 100) : 0;
-  const notWorthItPct = total > 0 ? Math.round((notWorthIt / total) * 100) : 0;
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const rows = [
+    { key: "SAME_QUALITY", count: sameQuality, pct: pct(sameQuality), bar: "bg-emerald-500", text: "text-emerald-700" },
+    { key: "CLOSE_ENOUGH", count: closeEnough, pct: pct(closeEnough), bar: "bg-amber-500", text: "text-amber-700" },
+    { key: "NOT_WORTH_IT", count: notWorthIt, pct: pct(notWorthIt), bar: "bg-red-500", text: "text-red-700" },
+  ];
 
   return (
     <div className="space-y-3">
       {/* Stacked bar */}
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200">
-        {total > 0 ? (
-          <>
-            {sameQualityPct > 0 && (
-              <div
-                className="bg-emerald-500 transition-all duration-300"
-                style={{ width: `${sameQualityPct}%` }}
-              />
-            )}
-            {closeEnoughPct > 0 && (
-              <div
-                className="bg-amber-500 transition-all duration-300"
-                style={{ width: `${closeEnoughPct}%` }}
-              />
-            )}
-            {notWorthItPct > 0 && (
-              <div
-                className="bg-red-500 transition-all duration-300"
-                style={{ width: `${notWorthItPct}%` }}
-              />
-            )}
-          </>
-        ) : null}
+      <div
+        className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200"
+        role="img"
+        aria-label={
+          total > 0
+            ? rows.map((r) => `${VOTE_LABELS[r.key]} ${r.pct}%`).join(", ")
+            : "No votes yet"
+        }
+      >
+        {total > 0
+          ? rows.map((r) =>
+              r.pct > 0 ? (
+                <div key={r.key} className={`${r.bar} transition-all duration-300`} style={{ width: `${r.pct}%` }} />
+              ) : null
+            )
+          : null}
       </div>
 
       {/* Labels */}
       <div className="grid grid-cols-3 gap-1 text-xs text-center">
-        <div>
-          <p className="text-emerald-700 font-semibold">{sameQualityPct}%</p>
-          <p className="text-gray-400 mt-0.5">Same Quality</p>
-        </div>
-        <div>
-          <p className="text-amber-700 font-semibold">{closeEnoughPct}%</p>
-          <p className="text-gray-400 mt-0.5">Close Enough</p>
-        </div>
-        <div>
-          <p className="text-red-700 font-semibold">{notWorthItPct}%</p>
-          <p className="text-gray-400 mt-0.5">Not Worth It</p>
-        </div>
+        {rows.map((r) => (
+          <div key={r.key}>
+            <p className={`${r.text} font-semibold`}>{r.pct}%</p>
+            <p className="text-gray-500 mt-0.5">{VOTE_LABELS[r.key]}</p>
+            <p className="text-gray-400">({r.count})</p>
+          </div>
+        ))}
       </div>
     </div>
   );
