@@ -2,25 +2,25 @@
 
 ## Project Overview
 
-Community-driven website where users look up, vote on, and contribute evidence about whether generic/store-brand products are the same quality as name-brand equivalents. Helps shoppers save money by surfacing community knowledge about which generics are worth buying.
+Community-driven website where **Canadian shoppers** look up, vote on, and contribute evidence about whether store-brand/generic products (No Name, President's Choice, Great Value, Kirkland Signature, Life Brand, Compliments, Selection, Equate…) are as good as the name brands — so people buying something for the first time can see whether paying more for the brand is worth it.
 
 **Live site:** https://genericornot.com
 **GitHub repo:** https://github.com/seawaydigital/genericornot
 **Domain registrar:** Porkbun (genericornot.com)
+**Launch runbook:** `docs/LAUNCH.md` (deploy order, owner checklist, what changed)
 
 ## Tech Stack
 
-- **Framework:** Next.js 16.2.2 (App Router) with TypeScript
+- **Framework:** Next.js 16.4.5 (App Router) with TypeScript
 - **Database:** Neon PostgreSQL (serverless, free tier, project "GenericOrNot", US East 2 Ohio)
-- **ORM:** Prisma v7 (uses `@prisma/adapter-neon` driver adapter, config in `prisma.config.ts`)
-- **Auth:** NextAuth.js v4 with Google OAuth + Facebook OAuth + Microsoft (Azure AD) OAuth + Email Magic Link (Resend) + @auth/prisma-adapter v2
+- **ORM:** Prisma 7.10 — `@prisma/adapter-neon` in production; `@prisma/adapter-pg` is picked automatically for `localhost` URLs (see `src/lib/db.ts`). Config in `prisma.config.ts`.
+- **Auth:** NextAuth.js v4 (Google + Facebook + Microsoft OAuth + Resend email magic link) + @auth/prisma-adapter v2. No nodemailer — the email provider is defined inline and sends via Resend's HTTP API.
 - **Styling:** Tailwind CSS v4
-- **Image Storage:** Cloudflare R2 (S3-compatible, zero egress) — configured but not yet active
 - **Brand Logos:** logo.dev API (free tier 500K req/month, token in `NEXT_PUBLIC_LOGO_DEV_TOKEN`)
-- **Email:** Resend API for magic link emails (free tier 3K/month) — may switch to Google Workspace SMTP
+- **Email:** Resend API for magic link emails (free tier 3K/month)
 - **Hosting:** Vercel (auto-deploys from GitHub master branch)
-- **Testing:** Vitest 4.1.2 + React Testing Library + happy-dom (349 tests passing)
-- **Search:** PostgreSQL full-text search (tsvector + trigram) — migration applied, 100 rows indexed. Falls back to Prisma `contains` if tsvector unavailable.
+- **Testing:** Vitest 4.1 + React Testing Library + happy-dom 21 (476 tests)
+- **Search:** PostgreSQL full-text search (tsvector + trigram) with a trigger keeping `searchVector` current. Falls back to Prisma `contains` if tsvector is unavailable.
 
 ## Visual Design
 
@@ -29,9 +29,9 @@ Community-driven website where users look up, vote on, and contribute evidence a
 - **Primary accent:** Navy blue (`#0d1b4a`) for links, buttons, branding
 - **Typography:** DM Sans (body) + Instrument Serif (headlines/logo italic accent)
 - **Cards:** White background with subtle gray border + shadow (defined as `glass` CSS utility)
-- **Verdict colors:** Emerald (worth it), Amber (close enough), Red (stick with brand)
-- **Footer tone:** Editorial — uppercase tracking, "Transparency is our only product"
-- **Comparison page:** 2-column layout on desktop (main content + sticky sidebar)
+- **Verdict colors:** Emerald (Generic Worth It), Amber (Close Enough), Red (Stick with Brand)
+- **Footer tone:** Editorial — uppercase tracking, "Transparency is our only product", "Made in Canada"
+- **Comparison page:** 2-column layout on desktop (main content + sticky vote sidebar); on mobile the vote card sits right after the products (single `VotePanel`, CSS grid placement)
 
 ## Project Structure
 
@@ -39,142 +39,133 @@ Community-driven website where users look up, vote on, and contribute evidence a
 src/
   app/                    # Next.js App Router pages and API routes
     api/
-      auth/[...nextauth]/ # Auth endpoints (Google + Email)
-      votes/              # Vote API (cast/change vote, recompute verdict)
-      comparisons/        # Comparison CRUD (GET list/single, POST create)
-      comparisons/[slug]/flag/ # Flag comparison as outdated
-      evidence/           # Evidence submission (GET/POST)
+      auth/[...nextauth]/ # Auth endpoints
+      votes/              # GET own vote; POST cast/change vote → recount from Vote rows, revalidate page
+      comparisons/        # GET list (effective-verdict filter), POST create (validated, 409 on duplicate)
+      comparisons/[slug]/ # GET single (approved evidence only)
+      comparisons/[slug]/flag/ # One "outdated" report per user (ComparisonFlag)
+      evidence/           # POST (http(s) links only, held as PENDING) / GET (approved only)
       search/             # Search API
-      admin/              # Admin actions (approve/reject pending submissions)
-      upload/             # Image upload to R2
+      admin/              # Moderation: approve/reject/archive/restore/markReviewed, approve/reject evidence
       categories/         # GET categories list
-    auth/
-      signin/             # Custom sign-in page (Google + Email magic link)
-      verify/             # "Check your email" page after magic link sent
-    compare/[slug]/       # Comparison detail page (2-column: BrandHero + sidebar)
-    categories/           # Category index page
-    categories/[slug]/    # Category browsing with filters
-    top-rated/            # Top rated comparisons by confidence score
-    new/                  # Recently added comparisons
-    search/               # Search results page
-    submit/               # Submit new comparison (auth-gated)
-    user/[username]/      # User profile
-    admin/                # Admin dashboard (admin-only)
-    about/                # Editorial independence policy
-    privacy/              # Privacy policy
-    terms/                # Terms of service
-    contact/              # Contact page with FAQ
-    not-found.tsx         # Custom 404 page with search
-    loading.tsx           # Homepage loading skeleton
-    icon.svg              # Favicon (G? in emerald/dark)
-    apple-icon.svg        # Apple touch icon
-    sitemap.ts            # Dynamic sitemap generation
-    robots.ts             # Robots.txt
+    auth/signin/          # Server page (reads callbackUrl/error) + SignInForm client component
+    auth/verify/          # "Check your email" page after magic link sent
+    compare/[slug]/       # Comparison page (ISR, generateStaticParams → []), opengraph-image.tsx
+    categories/, categories/[slug]/  # Browse (savings sort ranks by unit-price savings in memory)
+    top-rated/            # "Best Swaps": effective verdict SAME_QUALITY, by confidence then savings
+    new/, search/, submit/, user/[username]/, admin/
+    about/, privacy/, terms/, contact/  # privacy = PIPEDA/Law 25 basics; terms = Ontario law
+    opengraph-image.tsx   # Site-wide share image
+    sitemap.ts (revalidates hourly), robots.ts, not-found.tsx, error.tsx, global-error.tsx
   components/
-    layout/               # Navbar, Footer, SearchBar, Providers (SessionProvider)
-    comparison/           # ProductCard, VerdictBadge, GenericStatusBadge, BrandHero,
-                          # GenericAlternative, QuickFacts, VoteButtons, VoteBreakdown,
-                          # EvidenceList, EvidenceForm, FreshnessIndicator, FlagOutdatedButton
-    category/             # CategoryGrid, CategoryFilter
-    home/                 # TrendingSection, RecentActivity
-    admin/                # SubmissionQueue
-    ui/                   # Badge, Button, Card, ProductIcon, Skeleton
+    layout/               # Navbar (click menu, profile/admin links), Footer, SearchBar, Providers
+    comparison/           # ProductCard, GenericStatusBadge, BrandHero, GenericAlternative, PriceComparison,
+                          # VotePanel (logic) + VoteButtons/VoteBreakdown (presentational), EvidenceList,
+                          # EvidenceForm, QuickFacts, FreshnessIndicator, FlagOutdatedButton, HealthNotice,
+                          # AdminTools (admin-only inline "mark reviewed"/archive), VerdictBadge
+    category/, home/
+    admin/                # SubmissionQueue, EvidenceQueue, FlaggedQueue, ArchivedList
+    ui/                   # Badge, Button, Card, ProductIcon, Skeleton, LegalPage
   lib/
-    db.ts                 # Prisma client singleton (PrismaNeon adapter)
-    auth.ts               # NextAuth config (Google + Facebook + AzureAD + Email providers, all conditional on env vars, JWT, Prisma adapter)
-    verdict.ts            # Verdict computation (pure function) + savings calculation
-    search.ts             # Search: tsvector full-text with trigram fallback → Prisma contains fallback
-    slug.ts               # Slug generation with collision handling
-    upload.ts             # R2 image upload (validate + upload)
-    rate-limit.ts         # Rate limiting (in-memory sliding window, per API route)
-    admin.ts              # requireAdmin() helper
-    seo.ts                # SEO metadata helpers (brand-first titles, JSON-LD)
-    brand-logos.ts        # Brand-to-domain mapping for logo.dev API (75+ brands)
-  prisma/
-    schema.prisma         # Database schema (all models + enums + searchVector tsvector field)
-    seed.ts               # Seed data (120 comparisons: 100 US + 20 Canadian, uses PrismaNeon adapter)
-    apply-search-migration.ts  # Script to apply full-text search indexes (run with npx tsx)
-    search_vector_migration_backup/ # Raw SQL for tsvector migration
+    db.ts                 # Prisma client factory (Neon or pg adapter) + singleton
+    auth.ts               # NextAuth config; pseudonymous usernames via username.ts
+    verdict.ts            # computeVerdict, getDisplayVerdict (community vs research), computeSavings (unit-aware), tallyVotes
+    verdict-labels.ts     # Shared wording for verdicts and vote options
+    units.ts              # Package-size parser ("2 x 1.89 L", "100 tablets", "75 sq ft") + unit prices
+    format.ts             # formatCAD, en-CA dates
+    validation.ts         # cleanText, isSafeHttpUrl, parsePrice, field validators, LIMITS
+    comparisons.ts        # effectiveVerdictWhere, toCardData (Decimal → number), card include
+    site.ts               # SITE_URL, copy constants, safeCallbackPath (open-redirect guard)
+    search.ts, slug.ts, seo.ts (WebPage JSON-LD, no fake ratings), rate-limit.ts, admin.ts, brand-logos.ts
+    catalogue/            # Curated Canadian catalogue: types.ts, data.ts (71 entries + archive list),
+                          # sync.ts (idempotent, transactional), constants.ts (system account)
   test/
-    setup.ts              # Vitest setup (jest-dom matchers, cleanup)
-    mock-prisma.ts        # Reusable Prisma mock for tests
-  types/
-    next-auth.d.ts        # Session type augmentation (id, role, username)
+    setup.ts, mock-prisma.ts (+ asMock for groupBy), fixtures.ts (typed model factories)
+  types/next-auth.d.ts
+prisma/
+  schema.prisma           # Models + enums + searchVector tsvector field
+  seed.ts                 # Non-destructive: runs the catalogue sync. --reset only on disposable dev DBs
+  apply-search-migration.ts, search_vector_migration_backup/
+scripts/
+  sync-catalogue.ts       # Production-safe catalogue sync (dry run by default, --apply to write)
+  promote-admin.ts
+docs/LAUNCH.md            # Launch runbook
 ```
 
 ## Data Model
 
-- **ProductComparison** — central entity with generic + name brand details, verdict, confidence, status, lastVerifiedAt, flaggedOutdated, flagCount, searchVector (tsvector)
-- **Vote** — one per user per comparison (upsert), triggers verdict recomputation
-- **Evidence** — user-submitted proof with confidence tier (CONFIRMED/COMMUNITY/UNVERIFIED)
-- **User** — Google/Facebook/Microsoft OAuth or Email magic link, auto-generated username, USER or ADMIN role. Same email across providers = same account (allowDangerousEmailAccountLinking: true on all providers)
-- **Category** — flat list with emoji icons and comparison counts (8 categories)
-- **Account/Session/VerificationToken** — NextAuth adapter tables (VerificationToken used for email magic links)
+- **ProductComparison** — generic + name brand details (name, brand, store, price, **size**), community `verdict`/`confidenceScore`/`totalVotes` (computed **only** from Vote rows), `editorialVerdict` + `editorialNote` (research verdict), `featured`, `status` (PENDING/APPROVED/REJECTED/**ARCHIVED**), `lastVerifiedAt` ("reviewed by an editor"), `flaggedOutdated`/`flagCount`, `searchVector`
+- **Vote** — one per user per comparison (upsert)
+- **Evidence** — type, confidence tier (CONFIRMED/COMMUNITY/UNVERIFIED), **status** (PENDING/APPROVED/REJECTED; column default APPROVED so pre-existing rows stayed public; the API creates user evidence as PENDING)
+- **ComparisonFlag** — one "outdated" report per user per comparison (unique userId+comparisonId), optional reason
+- **User** — pseudonymous `username`, private `name`/`email`/`image`, `emailVerified` (needed by the magic-link provider), USER or ADMIN role
+- **Category** — 8 flat categories (Grocery, Health & Pharmacy, Cleaning & Laundry, Baby & Kids, Personal Care, Pet Supplies, Electronics, Household); `comparisonCount` is recomputed, never incremented
+- **Account/Session/VerificationToken** — NextAuth adapter tables
 
 ## Core Business Logic
 
-### Verdict Computation (`src/lib/verdict.ts`)
-- PENDING: < 5 votes
-- SAME_QUALITY / CLOSE_ENOUGH / NOT_WORTH_IT: plurality > 40%
-- MIXED: no category > 40%
+### Verdicts (`src/lib/verdict.ts`)
+- Community verdict: PENDING < 5 votes; SAME_QUALITY / CLOSE_ENOUGH / NOT_WORTH_IT when the plurality > 40%; MIXED otherwise.
 - Confidence: `min(100, totalVotes * 2) * (topVotePercent / 100)`
+- **Display verdict** (`getDisplayVerdict`): community verdict once it exists (≥ 5 votes); otherwise the research verdict (always labelled "Research"); otherwise "Awaiting Votes".
+- Filters and "Best Swaps" use the same effective verdict (`effectiveVerdictWhere`).
 
-### Savings: `((nameBrandPrice - genericPrice) / nameBrandPrice * 100)` — null if either price missing
+### Savings
+- `computeSavings(genericPrice, nameBrandPrice, genericSize?, nameBrandSize?)` compares **unit prices** when both sizes parse to the same unit kind (g, mL, count, m², m); otherwise package prices. Negative = generic costs more. Prices are approximate regular CAD shelf prices.
+
+### Catalogue (`src/lib/catalogue/`)
+- `data.ts` is the source of truth for starter content. Rules (enforced by `src/lib/__tests__/catalogue.test.ts`): unique permanent slugs; `editorialVerdict` only with CONFIRMED evidence that has a source URL; Canadian retailers only; no FDA references; parseable sizes.
+- `sync.ts`: upsert by slug, never overrides an admin's ARCHIVED/REJECTED decision, replaces only system-authored evidence when it changed, clears `lastVerifiedAt` only when displayed facts change, archives `ARCHIVED_LEGACY_SLUGS`, recounts all tallies from Vote rows, recomputes category counts. One transaction; dry-run rolls back.
+- System author: `admin@genericornot.com` → username `genericornot-team`, role USER (constants.ts).
+
+### Moderation
+- New comparisons and new evidence are PENDING until an admin approves them (`/admin`). Approving a comparison also approves the submitter's attached evidence and stamps `lastVerifiedAt`.
+- Admins can "Mark reviewed" (clears reports, stamps date) from the dashboard or the inline AdminTools bar on any comparison page.
 
 ### Brand Logo Resolution (`src/lib/brand-logos.ts`)
-- Maps 75+ brand names to website domains
-- `getBrandLogoUrl(brandName)` returns logo.dev URL or null if no token/no mapping
-- Used by ProductIcon component with emoji fallback
+- Exact brand-name → domain map (Canadian brands included; store brands map to their retailer). Unknown brands fall back to the category emoji — only add domains you're sure of.
 
 ### Search (`src/lib/search.ts`)
-- Parses "X vs Y" queries
-- Tries tsvector full-text search with `ts_rank()` + `similarity()` (trigram fuzzy matching)
-- Falls back to Prisma `contains` if tsvector unavailable
-- Migration already applied to production (100 rows indexed, trigger auto-updates new rows)
+- Parses "X vs Y" queries; tsvector + `similarity()` ranking; falls back to Prisma `contains`.
 - Re-run if needed: `npx tsx prisma/apply-search-migration.ts` (idempotent)
 
 ## Authentication
 
-All providers registered conditionally on env vars — app boots cleanly with any subset configured.
-Sign-in buttons appear/hide automatically based on which providers are active.
+All providers are registered conditionally on env vars — the app boots cleanly with any subset configured; sign-in buttons show/hide automatically.
 
-Configured providers in `src/lib/auth.ts`:
 1. **Google OAuth** — `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` — ✅ LIVE
-2. **Facebook OAuth** — `FACEBOOK_CLIENT_ID` + `FACEBOOK_CLIENT_SECRET` — ✅ LIVE (app published in Meta developer portal)
-3. **Microsoft OAuth** — `AZURE_AD_CLIENT_ID` + `AZURE_AD_CLIENT_SECRET` + `AZURE_AD_TENANT_ID` (default: `common`) — ⏳ Code ready, env vars not yet set (Azure tenant setup pending)
-4. **Email Magic Link** — `RESEND_API_KEY` + `EMAIL_FROM` — ⏳ Not yet set up (needs Resend account + domain verification)
+2. **Facebook OAuth** — `FACEBOOK_CLIENT_ID` + `FACEBOOK_CLIENT_SECRET` — ✅ LIVE
+3. **Microsoft OAuth** — `AZURE_AD_CLIENT_ID` + `AZURE_AD_CLIENT_SECRET` + `AZURE_AD_TENANT_ID` (default `common`) — ⏳ env vars not set
+4. **Email Magic Link** — `RESEND_API_KEY` + `EMAIL_FROM` — ⏳ not set (recommended before launch)
 
-All OAuth providers use `allowDangerousEmailAccountLinking: true` — same email across providers = same account, no duplicates.
-
-Custom sign-in page at `/auth/signin` (server component passes available provider IDs to `SignInForm` client component).
-Verify page at `/auth/verify` for email magic links.
-Sign-in links throughout the app point to `/auth/signin` (not `/api/auth/signin`).
+- All OAuth providers use `allowDangerousEmailAccountLinking: true` (same email = one account).
+- New users get a random pseudonymous username (`thrifty-loon-4821`); public profiles never show the real name, email or OAuth photo.
+- Sign-in links carry `?callbackUrl=` (validated by `safeCallbackPath`) so people return to the page they were on. Signed-out votes are stored in sessionStorage and replayed after sign-in.
+- JWT sessions: a role change takes effect after the user signs out and back in.
 
 ## CSS Design System (`src/app/globals.css`)
 
-Custom Tailwind v4 utilities defined via `@utility`:
-- `glass` — white card: `bg-white`, `border-gray-200`, `shadow-sm`
-- `glass-hover` — hover state: lighter bg, darker border, larger shadow
-- `gradient-mesh` — subtle navy radial gradients for hero background
-- `accent-line` — 40px navy line before section headers
-- `gradient-divider` — full-width gray gradient horizontal rule
-- `animate-fade-up` / `animate-fade-in` — entrance animations with `delay-*` variants
-
+Custom Tailwind v4 utilities via `@utility`: `glass`, `glass-hover`, `gradient-mesh`, `accent-line`, `gradient-divider`, `animate-fade-up` / `animate-fade-in` (+ `delay-*`).
 Color tokens: `--background: #fafaf8`, `--navy: #0d1b4a`, `--navy-light: #1e3a7a`
 
 ## Development Commands
 
 ```bash
 npm run dev          # Start dev server (port 3000)
-npm test             # Run Vitest tests (349 tests)
+npm test             # Run Vitest tests (476)
 npm run test:watch   # Watch mode
+npm run lint         # ESLint
+npx tsc --noEmit     # Type-check (tests included)
 npm run build        # Build (includes prisma generate)
-npx prisma db push   # Push schema to database
-npx prisma db seed   # Seed database (120 comparisons: 100 US + 20 Canadian)
-npx prisma studio    # Visual DB browser
-npx prisma generate  # Regenerate Prisma client
-npx tsx prisma/apply-search-migration.ts  # Apply full-text search indexes
+npx prisma db push   # Push schema to database (additive changes only in production!)
+npx prisma db seed   # Upsert the Canadian catalogue (safe to re-run; never deletes)
+npx tsx prisma/seed.ts --reset   # Dev only: wipe + reseed (refuses on prod / DBs with real users)
+npx tsx scripts/sync-catalogue.ts           # Dry run against DATABASE_URL
+npx tsx scripts/sync-catalogue.ts --apply   # Apply catalogue changes
+npx tsx prisma/apply-search-migration.ts    # Full-text search indexes + trigger
 ```
+
+Local Postgres works out of the box: a `localhost`/`127.0.0.1` `DATABASE_URL` uses node-postgres automatically (`DATABASE_ADAPTER=pg|neon` overrides).
 
 ## Admin Operations
 
@@ -183,104 +174,68 @@ npx tsx prisma/apply-search-migration.ts  # Apply full-text search indexes
 npx tsx scripts/promote-admin.ts you@example.com
 ```
 
-Point your local `.env` `DATABASE_URL` at the target database (prod or dev) before running. The user must have signed in at least once so their `User` row exists. Script is idempotent.
+Point your local `.env` `DATABASE_URL` at the target database before running. Script is idempotent.
 
 ## Architecture Decisions
 
-- **NextAuth v4** (not v5 beta) — stable API, all code uses `NextAuthOptions`, `getServerSession`
-- **Prisma v7** with `@prisma/adapter-neon` — requires driver adapter for serverless Postgres
-- **Prisma db push** (not migrate dev) — used for initial setup; search vector migration stored separately
-- **prisma generate in build** — `package.json` build script runs `prisma generate && next build`; `postinstall` also runs `prisma generate` for Vercel deployments
-- **Rate limiting in API route handlers** (not edge middleware) — edge middleware is stateless on Vercel
-- **ISR caching** — comparison pages (60s), category pages (5min), homepage (2min), search (always dynamic)
-- **Server components by default** — client components only for interactive parts (voting, forms, sign-in)
-- **Flat categories** for v1 — hierarchical deferred to v2
-- **Brand-first UX** — cards lead with name brand product, show generic status as verdict indicator
-- **logo.dev for brand images** — free tier (500K/month), publishable token in NEXT_PUBLIC env var, emoji fallback when no token
-- **Light editorial theme** — navy (#0d1b4a) primary accent, warm off-white background, DM Sans + Instrument Serif
-- **2-column comparison page** — main content (2/3) + sticky sidebar (1/3) on desktop, stacks on mobile
-- **Custom sign-in page** — `/auth/signin` split into server page + `SignInForm` client component; buttons auto-show based on registered providers
-- **Multi-provider auth** — Google + Facebook active; Microsoft code ready (needs Azure env vars); email magic link code ready (needs Resend env vars)
-- **Account linking** — `allowDangerousEmailAccountLinking: true` on all providers; same email = one account regardless of sign-in method
-
-## Implementation Status
-
-All phases COMPLETE. Site is live at genericornot.com.
-
-### Completed Features
-- Full CRUD: comparisons, votes, evidence, categories
-- Google OAuth + Email Magic Link authentication
-- Brand-first UI with logo.dev integration
-- SEO (sitemap, robots.txt, JSON-LD, OpenGraph)
-- Rate limiting on all mutation endpoints
-- Vote integrity (1-hour account age minimum)
-- Evidence confidence tiers (CONFIRMED/COMMUNITY/UNVERIFIED)
-- Data freshness tracking + outdated flagging
-- Admin dashboard for submission review
-- Custom 404 page with search
-- Loading skeletons for all data pages
-- 120 seed comparisons (100 US + 20 Canadian)
-- Full-text search upgrade (tsvector + trigram, with migration script)
-- All 14 pages: home, categories, categories/[slug], top-rated, new, compare/[slug], search, submit, about, privacy, terms, contact, user/[username], admin
+- **NextAuth v4** (not v5 beta) — stable API, `NextAuthOptions`, `getServerSession`
+- **Prisma v7** with driver adapters — Neon in prod, pg locally
+- **Prisma db push** (not migrate) — schema changes must stay additive so `db push` can run before code deploys
+- **No fabricated data** — vote counts come only from Vote rows; editorial knowledge is shown as a separately labelled research verdict
+- **ISR comparison pages** — cached 60 s, revalidated on vote/evidence/admin actions; per-user state (your vote) loads client-side
+- **Rate limiting in route handlers** — in-memory, per instance (move to Upstash if abused)
+- **Evidence pre-moderation** — claims about brands go public only after review
+- **Archive, don't delete** — retired comparisons keep their votes/evidence and can be restored
+- **Server components by default** — client components only for interactive parts
+- **Flat categories** for v1
+- **Brand-first UX** — cards lead with the name brand, show the generic's verdict and savings
+- **Security headers** in `next.config.ts` (no CSP yet; HSTS comes from Vercel)
 
 ## Environment Variables
 
-See `.env.example` for required variables:
-- `DATABASE_URL` — Neon PostgreSQL connection string (set in .env and Vercel) ✅
-- `NEXTAUTH_SECRET` — Random secret for JWT signing (set in Vercel) ✅
-- `NEXTAUTH_URL` — `https://genericornot.com` (no trailing slash, no www) ✅
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth (set in Vercel, Google Cloud project "Generic Or Not") ✅
-- `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` — Facebook OAuth (Meta app "Generic or Not", App ID 1875911233106909) ✅
-- `AZURE_AD_CLIENT_ID` / `AZURE_AD_CLIENT_SECRET` / `AZURE_AD_TENANT_ID` — Microsoft OAuth (⏳ not yet set — Azure tenant setup needed)
-- `RESEND_API_KEY` — Resend API for email magic links (⏳ not yet set — need resend.com account + domain verification)
-- `EMAIL_FROM` — Sender for magic link emails (`GenericOrNot <noreply@genericornot.com>`)
-- `NEXT_PUBLIC_LOGO_DEV_TOKEN` — logo.dev publishable API key (set in .env and Vercel) ✅
-- `R2_*` — Cloudflare R2 credentials (⏳ not yet set — dead code, activate or delete)
+See `.env.example`:
+- `DATABASE_URL` ✅, `NEXTAUTH_SECRET` ✅, `NEXTAUTH_URL` (`https://genericornot.com`) ✅
+- `NEXT_PUBLIC_SITE_URL` — optional, defaults to `https://genericornot.com`
+- `GOOGLE_*` ✅, `FACEBOOK_*` ✅, `AZURE_AD_*` ⏳, `RESEND_API_KEY` + `EMAIL_FROM` ⏳
+- `NEXT_PUBLIC_LOGO_DEV_TOKEN` ✅
+- `VOTE_MIN_ACCOUNT_AGE_MINUTES` — optional anti-brigading delay, default 0 (off)
+- `DATABASE_ADAPTER` — optional override (`pg` / `neon`)
+- `R2_*` — no longer used (upload code removed); safe to delete from Vercel
 
 ## Deployment
 
-- **Vercel project:** genericornot (seawaydigital org)
-- **Auto-deploy:** pushes to `master` branch auto-deploy to production
-- **Domain:** genericornot.com (DNS via Porkbun → Vercel)
-- **Database:** Neon project "GenericOrNot", US East 2 (Ohio), seeded with 120 comparisons
-- **Google OAuth:** Google Cloud project "Generic Or Not", consent screen published (External), credentials in Vercel ✅
-- **Facebook OAuth:** Meta app "Generic or Not" (App ID 1875911233106909), published, credentials in Vercel ✅
-- **Domain config:** genericornot.com → Production; www.genericornot.com → 308 redirect to genericornot.com (non-www is canonical)
-- **FlexOffers:** Domain verification meta tag added to site header
-- **Admin:** andrew@seawaydigital.ca promoted to ADMIN role (username: andrew-austin-468)
+- **Vercel project:** genericornot (seawaydigital org); pushes to `master` auto-deploy
+- **Domain:** genericornot.com (DNS via Porkbun → Vercel); www → 308 redirect to apex
+- **Database:** Neon project "GenericOrNot", US East 2 (Ohio)
+- **Deploy order for schema changes:** back up → `prisma db push` → (catalogue sync if needed) → merge to master. Full steps in `docs/LAUNCH.md`.
+- **Google OAuth:** redirect URI `https://genericornot.com/api/auth/callback/google`
+- **Facebook OAuth:** callback `https://genericornot.com/api/auth/callback/facebook`
+- **FlexOffers:** domain verification meta tag (`fo-verify`) via root layout metadata
+- **Admin:** andrew@seawaydigital.ca promoted to ADMIN role (username: andrew-austin-468 — legacy name-based handle; see LAUNCH.md to rename)
 
 ## What's NOT Yet Set Up
 
-- [ ] **Microsoft OAuth** — Code in `src/lib/auth.ts` is ready. Needs Azure AD tenant + app registration. Set `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID=common` in Vercel. Azure setup blocked by account type (no subscription); try signing into portal.azure.com with a personal Microsoft account instead.
-- [ ] **Email magic link provisioning** — Code ready, provider conditional on env vars. Need: resend.com account, verify genericornot.com domain in Porkbun DNS, add `RESEND_API_KEY` + `EMAIL_FROM` to Vercel.
-- [ ] **Cloudflare R2** — Image upload API exists (`src/app/api/upload/`, `src/lib/upload.ts`) but no UI wires to it and R2 credentials not set. Recommend deleting dead code unless product photos are a priority.
-- [ ] **Error tracking** — No Sentry. Route-level (`src/app/error.tsx`) and root (`src/app/global-error.tsx`) error boundaries exist as safety nets.
-- [ ] **Facebook app icon** — Meta developer portal requires 1024×1024 icon for app store listing (not blocking functionality).
-
-## What's DONE (recently completed)
-
-- [x] **Google OAuth fixed and live** — Root cause was www/non-www domain mismatch (Vercel was redirecting genericornot.com → www; flipped so www → genericornot.com). Google Cloud redirect URI: `https://genericornot.com/api/auth/callback/google`
-- [x] **Facebook OAuth live** — Meta app "Generic or Not" created, published, credentials in Vercel. Callback: `https://genericornot.com/api/auth/callback/facebook`
-- [x] **Microsoft OAuth code added** — `AzureADProvider` wired in auth.ts + Microsoft button in sign-in form; awaiting Azure env vars
-- [x] **Full-text search migration applied** — 100 rows indexed with tsvector + trigram; auto-update trigger active for new rows; `apply-search-migration.ts` rewritten to handle dollar-quoted SQL
-- [x] **Admin promoted** — andrew@seawaydigital.ca → ADMIN (username: andrew-austin-468)
-- [x] **Vercel domain fixed** — genericornot.com = Production; www = 308 redirect
-- [x] Auth module crash-safe — all providers conditional on env vars
-- [x] Sign-in page: server component + `SignInForm` client component; buttons auto-show/hide
-- [x] Route-level + root error boundaries
-- [x] Admin promotion CLI script (`scripts/promote-admin.ts`)
-- [x] Vercel Analytics in layout
-- [x] Light editorial theme, all 14 pages, 120 seed comparisons, Canadian products
+- [ ] **Production catalogue sync** — run `docs/LAUNCH.md` steps 1–3 (db push → sync → merge)
+- [ ] **Email magic link** — Resend account + DNS verification + env vars
+- [ ] **Microsoft OAuth** — Azure app registration + env vars
+- [ ] **French (fr-CA)** — no i18n yet
+- [ ] **Error tracking** — no Sentry; route-level and root error boundaries exist
+- [ ] **Shared rate limiting** — in-memory only
+- [ ] **Self-serve username change / account deletion** — handled by email for now (see privacy policy)
+- [ ] **Facebook app icon** — 1024×1024 icon for the Meta listing (not blocking)
 
 ## Conventions
 
-- Tests colocated in `__tests__/` directories next to source
-- All 349 tests must pass before pushing
-- All new comparisons start as PENDING, require admin approval
-- One vote per user per comparison (upsert pattern)
-- Slugs auto-generated from product names with collision suffix
-- Brand-first UX: cards lead with name brand, show generic status as indicator
-- `tsconfig.json` excludes `prisma/` directory from TypeScript build checks (seed.ts uses different import patterns)
+- Tests colocated in `__tests__/` directories; use `src/test/fixtures.ts` factories instead of hand-written model objects
+- All tests, `npx tsc --noEmit` and `npm run lint` must pass before pushing
+- **Never fabricate votes, reviews or verification dates.** Seed data starts at zero votes
+- Research verdicts require CONFIRMED evidence with a source URL; taste/performance questions stay community-only
+- Canadian English copy; prices in CAD (`formatCAD`); dates via `formatDate` (en-CA)
+- New comparisons and evidence start PENDING and require admin approval
+- One vote per user per comparison (upsert); one flag per user per comparison
+- Slugs are permanent URLs — archive instead of renaming or deleting
+- Schema changes must be additive (nullable columns / defaults) so `db push` is safe before deploy
+- `tsconfig.json` excludes `prisma/`; shared logic used by scripts lives in `src/lib` with relative imports
 - CSS uses `@utility` directives in globals.css for custom Tailwind v4 classes
-- Navy (`#0d1b4a`) for accent/links, grays for text hierarchy (900/700/500/400/300)
-- Sign-in links point to `/auth/signin`, not `/api/auth/signin`
+- Navy (`#0d1b4a`) for accent/links; prefer gray-500+ for text on white for contrast
+- Sign-in links point to `/auth/signin?callbackUrl=<current path>`, never `/api/auth/signin`
