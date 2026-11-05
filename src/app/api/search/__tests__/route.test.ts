@@ -1,40 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { prismaMock } from "@/test/mock-prisma";
+import { makeCategory, makeComparison } from "@/test/fixtures";
 import { NextRequest } from "next/server";
 
 import { GET } from "../route";
 
 const makeRequest = (url: string) => new NextRequest(`http://localhost${url}`);
 
-const mockCategory = {
-  id: "cat-1",
-  name: "Grocery",
-  slug: "grocery",
-  icon: "🛒",
-  comparisonCount: 5,
-};
+const mockCategory = makeCategory();
 
 const mockComparison = {
-  id: "comp-1",
-  slug: "store-cereal-vs-frosted-flakes",
-  genericProductName: "Store Cereal",
-  genericBrand: "Great Value",
-  genericStore: "Walmart",
-  genericPrice: 2.99,
-  genericImageUrl: null,
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
-  nameBrandPrice: 4.99,
-  nameBrandImageUrl: null,
-  categoryId: "cat-1",
-  verdict: "SAME_QUALITY" as const,
-  confidenceScore: 80,
-  totalVotes: 40,
-  status: "APPROVED" as const,
-  rejectionReason: null,
-  submittedById: null,
-  createdAt: new Date("2026-01-01"),
-  updatedAt: new Date("2026-01-01"),
+  ...makeComparison({
+    slug: "store-cereal-vs-frosted-flakes",
+    genericProductName: "Store Cereal",
+    genericBrand: "Great Value",
+    genericStore: "Walmart",
+    nameBrandProductName: "Frosted Flakes",
+    nameBrand: "Kellogg's",
+    verdict: "SAME_QUALITY",
+    confidenceScore: 80,
+    totalVotes: 40,
+    status: "APPROVED",
+  }),
   category: mockCategory,
 };
 

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { SITE_NAME, SITE_URL } from "./site";
+import { getDisplayVerdict } from "./verdict";
 
 interface ComparisonForSeo {
   genericProductName: string;
@@ -10,6 +12,7 @@ interface ComparisonForSeo {
   nameBrandPrice?: number | null;
   slug: string;
   verdict: string;
+  editorialVerdict?: string | null;
   confidenceScore: number;
   totalVotes: number;
   category?: { name: string; slug: string } | null;
@@ -23,11 +26,23 @@ interface CategoryForSeo {
   comparisonCount?: number;
 }
 
-const BASE_URL = "https://genericornot.com";
+const BASE_URL = SITE_URL;
+
+function verdictSentence(comparison: ComparisonForSeo): string {
+  const display = getDisplayVerdict(comparison);
+  const votes = `${comparison.totalVotes} vote${comparison.totalVotes !== 1 ? "s" : ""}`;
+  if (display.source === "community") {
+    return `Community verdict: ${formatVerdict(display.verdict)} with ${votes}.`;
+  }
+  if (display.source === "research") {
+    return `Research verdict: ${formatVerdict(display.verdict)} (${votes} so far).`;
+  }
+  return `Community verdict: ${formatVerdict("PENDING")} with ${votes}.`;
+}
 
 export function getComparisonMetadata(comparison: ComparisonForSeo): Metadata {
-  const title = `${comparison.nameBrand} ${comparison.nameBrandProductName} — Generic Alternative | GenericOrNot`;
-  const description = `Is ${comparison.genericBrand} ${comparison.genericProductName} (${comparison.genericStore}) the same quality as ${comparison.nameBrand} ${comparison.nameBrandProductName}? Community verdict: ${formatVerdict(comparison.verdict)} with ${comparison.totalVotes} vote${comparison.totalVotes !== 1 ? "s" : ""}.`;
+  const title = `${comparison.nameBrand} ${comparison.nameBrandProductName} — Generic Alternative | ${SITE_NAME}`;
+  const description = `Is ${comparison.genericBrand} ${comparison.genericProductName} (${comparison.genericStore}) the same quality as ${comparison.nameBrand} ${comparison.nameBrandProductName}? ${verdictSentence(comparison)} Canadian prices and evidence.`;
   const url = `${BASE_URL}/compare/${comparison.slug}`;
 
   return {
@@ -38,10 +53,11 @@ export function getComparisonMetadata(comparison: ComparisonForSeo): Metadata {
       description,
       url,
       type: "article",
-      siteName: "GenericOrNot",
+      siteName: SITE_NAME,
+      locale: "en_CA",
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
     },
@@ -52,10 +68,10 @@ export function getComparisonMetadata(comparison: ComparisonForSeo): Metadata {
 }
 
 export function getCategoryMetadata(category: CategoryForSeo): Metadata {
-  const title = `${category.name} — Generic vs Name Brand Comparisons — GenericOrNot`;
+  const title = `${category.name} — Generic vs Name Brand Comparisons — ${SITE_NAME}`;
   const description =
     category.description ??
-    `Browse ${category.comparisonCount ?? "community"} comparisons for ${category.name} products. Find out which generic store brands are the same quality as name brands.`;
+    `Browse ${category.comparisonCount ?? "community"} comparisons for ${category.name} products. Find out which Canadian store brands are the same quality as name brands.`;
   const url = `${BASE_URL}/categories/${category.slug}`;
 
   return {
@@ -66,7 +82,8 @@ export function getCategoryMetadata(category: CategoryForSeo): Metadata {
       description,
       url,
       type: "website",
-      siteName: "GenericOrNot",
+      siteName: SITE_NAME,
+      locale: "en_CA",
     },
     twitter: {
       card: "summary",
@@ -79,53 +96,54 @@ export function getCategoryMetadata(category: CategoryForSeo): Metadata {
   };
 }
 
-export function getComparisonJsonLd(comparison: ComparisonForSeo): object {
-  const offers: object[] = [];
-
-  if (comparison.genericPrice != null) {
-    offers.push({
-      "@type": "Offer",
-      name: `${comparison.genericBrand} (Generic)`,
-      price: comparison.genericPrice.toFixed(2),
-      priceCurrency: "USD",
-      seller: {
-        "@type": "Organization",
-        name: comparison.genericStore,
-      },
-    });
-  }
-
-  if (comparison.nameBrandPrice != null) {
-    offers.push({
-      "@type": "Offer",
-      name: `${comparison.nameBrand} (Name Brand)`,
-      price: comparison.nameBrandPrice.toFixed(2),
-      priceCurrency: "USD",
-      seller: {
-        "@type": "Organization",
-        name: comparison.nameBrand,
-      },
-    });
-  }
+/**
+ * Structured data for a comparison page.
+ *
+ * Deliberately a WebPage *about* two products rather than a Product with an
+ * AggregateRating: our verdicts are not star ratings, and marking them up as
+ * ratings would misrepresent them to search engines. Prices are approximate
+ * shelf prices, not live offers, so no Offer markup either.
+ */
+export function getComparisonJsonLd(comparison: ComparisonForSeo): Record<string, unknown> {
+  const url = `${BASE_URL}/compare/${comparison.slug}`;
+  const crumbs = [
+    { name: "Home", item: BASE_URL },
+    ...(comparison.category
+      ? [{ name: comparison.category.name, item: `${BASE_URL}/categories/${comparison.category.slug}` }]
+      : []),
+    { name: `${comparison.genericBrand} vs ${comparison.nameBrand}`, item: url },
+  ];
 
   return {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: comparison.nameBrandProductName,
-    description: `Community comparison: ${comparison.genericBrand} ${comparison.genericProductName} vs ${comparison.nameBrand} ${comparison.nameBrandProductName}. Verdict: ${formatVerdict(comparison.verdict)}.`,
-    url: `${BASE_URL}/compare/${comparison.slug}`,
-    ...(comparison.category ? { category: comparison.category.name } : {}),
-    offers,
-    aggregateRating:
-      comparison.totalVotes >= 5
-        ? {
-            "@type": "AggregateRating",
-            ratingCount: comparison.totalVotes,
-            ratingValue: verdictToRating(comparison.verdict),
-            bestRating: 5,
-            worstRating: 1,
-          }
-        : undefined,
+    "@type": "WebPage",
+    name: `${comparison.genericBrand} ${comparison.genericProductName} vs ${comparison.nameBrand} ${comparison.nameBrandProductName}`,
+    description: `Community comparison: ${comparison.genericBrand} ${comparison.genericProductName} vs ${comparison.nameBrand} ${comparison.nameBrandProductName}. ${verdictSentence(comparison)}`,
+    url,
+    inLanguage: "en-CA",
+    about: [
+      {
+        "@type": "Product",
+        name: comparison.nameBrandProductName,
+        brand: { "@type": "Brand", name: comparison.nameBrand },
+        ...(comparison.category ? { category: comparison.category.name } : {}),
+      },
+      {
+        "@type": "Product",
+        name: comparison.genericProductName,
+        brand: { "@type": "Brand", name: comparison.genericBrand },
+        ...(comparison.category ? { category: comparison.category.name } : {}),
+      },
+    ],
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: crumbs.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: c.name,
+        item: c.item,
+      })),
+    },
   };
 }
 
@@ -141,20 +159,5 @@ function formatVerdict(verdict: string): string {
       return "Mixed";
     default:
       return "Pending";
-  }
-}
-
-function verdictToRating(verdict: string): number {
-  switch (verdict) {
-    case "SAME_QUALITY":
-      return 5;
-    case "CLOSE_ENOUGH":
-      return 4;
-    case "MIXED":
-      return 3;
-    case "NOT_WORTH_IT":
-      return 2;
-    default:
-      return 3;
   }
 }

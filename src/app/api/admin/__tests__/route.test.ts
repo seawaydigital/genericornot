@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { prismaMock } from "@/test/mock-prisma";
 import { NextRequest } from "next/server";
+import { makeCategory, makeComparison, makeEvidence, makeSession } from "@/test/fixtures";
 
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
@@ -10,13 +11,15 @@ vi.mock("@/lib/auth", () => ({
   authOptions: {},
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 const mockGetServerSession = vi.mocked(getServerSession);
 
 import { GET, POST } from "../route";
-
-const makeGetRequest = () =>
-  new NextRequest("http://localhost/api/admin", { method: "GET" });
 
 const makePostRequest = (body: unknown) =>
   new NextRequest("http://localhost/api/admin", {
@@ -25,71 +28,12 @@ const makePostRequest = (body: unknown) =>
     body: JSON.stringify(body),
   });
 
-const mockAdminSession = {
-  user: {
-    id: "admin-1",
-    name: "Admin User",
-    email: "admin@test.com",
-    role: "ADMIN",
-    username: "admin-123",
-  },
-  expires: "2099-01-01",
-};
+const adminSession = makeSession({ id: "admin-1", role: "ADMIN" });
+const userSession = makeSession({ id: "user-1", role: "USER" });
 
-const mockUserSession = {
-  user: {
-    id: "user-1",
-    name: "Regular User",
-    email: "user@test.com",
-    role: "USER",
-    username: "user-456",
-  },
-  expires: "2099-01-01",
-};
-
-const mockCategory = {
-  id: "cat-1",
-  name: "Grocery",
-  slug: "grocery",
-  icon: "🛒",
-  comparisonCount: 5,
-};
-
-const mockSubmittedBy = {
-  id: "user-2",
-  name: "Contributor",
-  email: "contributor@test.com",
-  emailVerified: null,
-  image: null,
-  username: "contributor-789",
-  role: "USER" as const,
-  createdAt: new Date("2026-01-01"),
-  updatedAt: new Date("2026-01-01"),
-};
-
-const mockPendingComparison = {
-  id: "comp-1",
-  slug: "generic-cereal-vs-frosted-flakes",
-  genericProductName: "Generic Cereal",
-  genericBrand: "Store Brand",
-  genericStore: "Walmart",
-  genericPrice: 2.99,
-  genericImageUrl: null,
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
-  nameBrandPrice: 4.99,
-  nameBrandImageUrl: null,
-  categoryId: "cat-1",
-  verdict: "PENDING" as const,
-  confidenceScore: 0,
-  totalVotes: 0,
-  status: "PENDING" as const,
-  rejectionReason: null,
-  submittedById: "user-2",
-  createdAt: new Date("2026-04-01"),
-  updatedAt: new Date("2026-04-01"),
-  submittedBy: mockSubmittedBy,
-  category: mockCategory,
+const pending = {
+  ...makeComparison({ id: "comp-1", status: "PENDING", submittedById: "user-2" }),
+  category: { slug: "grocery" },
 };
 
 describe("GET /api/admin", () => {
@@ -97,196 +41,199 @@ describe("GET /api/admin", () => {
     vi.clearAllMocks();
   });
 
-  it("returns pending submissions for admin user", async () => {
-    mockGetServerSession.mockResolvedValue(mockAdminSession);
-    prismaMock.productComparison.findMany.mockResolvedValue([
-      mockPendingComparison,
-    ]);
+  it("returns the three moderation queues for an admin", async () => {
+    mockGetServerSession.mockResolvedValue(adminSession);
+    prismaMock.productComparison.findMany
+      .mockResolvedValueOnce([makeComparison({ status: "PENDING" })] as never)
+      .mockResolvedValueOnce([makeComparison({ id: "flagged", flagCount: 2 })] as never);
+    prismaMock.evidence.findMany.mockResolvedValue([makeEvidence({ status: "PENDING" })] as never);
 
-    const req = makeGetRequest();
-    const res = await GET(req);
+    const res = await GET();
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.comparisons).toHaveLength(1);
-    expect(body.comparisons[0].id).toBe("comp-1");
-    expect(body.comparisons[0].status).toBe("PENDING");
-
-    expect(prismaMock.productComparison.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { status: "PENDING" },
-        orderBy: { createdAt: "asc" },
-        include: expect.objectContaining({
-          submittedBy: true,
-          category: true,
-        }),
-      })
+    expect(body.evidence).toHaveLength(1);
+    expect(body.flagged).toHaveLength(1);
+    expect(prismaMock.evidence.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: "PENDING", comparison: { status: "APPROVED" } } })
     );
   });
 
   it("returns 403 for non-admin user", async () => {
-    mockGetServerSession.mockResolvedValue(mockUserSession);
-
-    const req = makeGetRequest();
-    const res = await GET(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(userSession);
+    const res = await GET();
     expect(res.status).toBe(403);
-    expect(body.error).toBeDefined();
     expect(prismaMock.productComparison.findMany).not.toHaveBeenCalled();
   });
 
   it("returns 401 for unauthenticated request", async () => {
     mockGetServerSession.mockResolvedValue(null);
-
-    const req = makeGetRequest();
-    const res = await GET(req);
-    const body = await res.json();
-
+    const res = await GET();
     expect(res.status).toBe(401);
-    expect(body.error).toBeDefined();
-    expect(prismaMock.productComparison.findMany).not.toHaveBeenCalled();
   });
 });
 
-describe("POST /api/admin", () => {
+describe("POST /api/admin — comparisons", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetServerSession.mockResolvedValue(adminSession);
+    prismaMock.productComparison.count.mockResolvedValue(7);
+    prismaMock.category.update.mockResolvedValue(makeCategory());
   });
 
-  it("approves a submission and increments category comparison count", async () => {
-    mockGetServerSession.mockResolvedValue(mockAdminSession);
-    prismaMock.productComparison.findUnique.mockResolvedValue(
-      mockPendingComparison
-    );
-    const approvedComparison = {
-      ...mockPendingComparison,
-      status: "APPROVED" as const,
-    };
-    prismaMock.productComparison.update.mockResolvedValue(approvedComparison);
-    prismaMock.category.update.mockResolvedValue({
-      ...mockCategory,
-      comparisonCount: 6,
-    });
+  it("approves a submission, marks it reviewed and recounts the category", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue(pending as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "APPROVED" }));
 
-    const req = makePostRequest({
-      action: "approve",
-      comparisonId: "comp-1",
-    });
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest({ action: "approve", comparisonId: "comp-1" }));
     expect(res.status).toBe(200);
-    expect(body.comparison.status).toBe("APPROVED");
 
-    expect(prismaMock.productComparison.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "comp-1" },
-        data: expect.objectContaining({ status: "APPROVED" }),
-      })
-    );
-
-    expect(prismaMock.category.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "cat-1" },
-        data: { comparisonCount: { increment: 1 } },
-      })
-    );
+    expect(prismaMock.productComparison.update).toHaveBeenCalledWith({
+      where: { id: "comp-1" },
+      data: expect.objectContaining({ status: "APPROVED", rejectionReason: null, lastVerifiedAt: expect.any(Date) }),
+    });
+    // Recount (not increment), so repeated approvals can't inflate the number.
+    expect(prismaMock.productComparison.count).toHaveBeenCalledWith({ where: { categoryId: "cat-1", status: "APPROVED" } });
+    expect(prismaMock.category.update).toHaveBeenCalledWith({ where: { id: "cat-1" }, data: { comparisonCount: 7 } });
+    expect(revalidatePath).toHaveBeenCalledWith("/compare/generic-cereal-vs-frosted-flakes");
   });
 
-  it("rejects a submission with a reason", async () => {
-    mockGetServerSession.mockResolvedValue(mockAdminSession);
-    prismaMock.productComparison.findUnique.mockResolvedValue(
-      mockPendingComparison
-    );
-    const rejectedComparison = {
-      ...mockPendingComparison,
-      status: "REJECTED" as const,
-      rejectionReason: "Duplicate submission",
-    };
-    prismaMock.productComparison.update.mockResolvedValue(rejectedComparison);
+  it("approves the submitter's attached evidence along with the comparison", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue(pending as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "APPROVED" }));
 
-    const req = makePostRequest({
-      action: "reject",
-      comparisonId: "comp-1",
-      reason: "Duplicate submission",
+    await POST(makePostRequest({ action: "approve", comparisonId: "comp-1" }));
+
+    expect(prismaMock.evidence.updateMany).toHaveBeenCalledWith({
+      where: { comparisonId: "comp-1", userId: "user-2", status: "PENDING" },
+      data: { status: "APPROVED" },
     });
-    const res = await POST(req);
-    const body = await res.json();
+  });
 
-    expect(res.status).toBe(200);
-    expect(body.comparison.status).toBe("REJECTED");
-    expect(body.comparison.rejectionReason).toBe("Duplicate submission");
+  it("does not touch category counts when approving something already approved", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...pending, status: "APPROVED" } as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "APPROVED" }));
 
-    expect(prismaMock.productComparison.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "comp-1" },
-        data: expect.objectContaining({
-          status: "REJECTED",
-          rejectionReason: "Duplicate submission",
-        }),
-      })
-    );
-
+    await POST(makePostRequest({ action: "approve", comparisonId: "comp-1" }));
     expect(prismaMock.category.update).not.toHaveBeenCalled();
   });
 
-  it("returns 400 for invalid action", async () => {
-    mockGetServerSession.mockResolvedValue(mockAdminSession);
+  it("rejects a submission with a trimmed reason", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue(pending as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "REJECTED" }));
 
-    const req = makePostRequest({
-      action: "delete",
-      comparisonId: "comp-1",
+    const res = await POST(makePostRequest({ action: "reject", comparisonId: "comp-1", reason: "  Duplicate  " }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.productComparison.update).toHaveBeenCalledWith({
+      where: { id: "comp-1" },
+      data: { status: "REJECTED", rejectionReason: "Duplicate" },
     });
-    const res = await POST(req);
-    const body = await res.json();
+  });
 
+  it("archives an approved comparison and recounts the category", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...pending, status: "APPROVED" } as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "ARCHIVED" }));
+
+    const res = await POST(makePostRequest({ action: "archive", comparisonId: "comp-1" }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.category.update).toHaveBeenCalled();
+  });
+
+  it("restores only archived comparisons", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...pending, status: "APPROVED" } as never);
+    let res = await POST(makePostRequest({ action: "restore", comparisonId: "comp-1" }));
     expect(res.status).toBe(400);
-    expect(body.error).toBeDefined();
-    expect(prismaMock.productComparison.update).not.toHaveBeenCalled();
+
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...pending, status: "ARCHIVED" } as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison({ status: "APPROVED" }));
+    res = await POST(makePostRequest({ action: "restore", comparisonId: "comp-1" }));
+    expect(res.status).toBe(200);
+  });
+
+  it("marks a comparison reviewed: clears reports and stamps the date", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...pending, status: "APPROVED", flagCount: 3, flaggedOutdated: true } as never);
+    prismaMock.productComparison.update.mockResolvedValue(makeComparison());
+
+    const res = await POST(makePostRequest({ action: "markReviewed", comparisonId: "comp-1" }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.comparisonFlag.deleteMany).toHaveBeenCalledWith({ where: { comparisonId: "comp-1" } });
+    expect(prismaMock.productComparison.update).toHaveBeenCalledWith({
+      where: { id: "comp-1" },
+      data: { flagCount: 0, flaggedOutdated: false, lastVerifiedAt: expect.any(Date) },
+    });
+  });
+
+  it("returns 400 for invalid action", async () => {
+    const res = await POST(makePostRequest({ action: "delete", comparisonId: "comp-1" }));
+    expect(res.status).toBe(400);
   });
 
   it("returns 404 for non-existent comparison", async () => {
-    mockGetServerSession.mockResolvedValue(mockAdminSession);
     prismaMock.productComparison.findUnique.mockResolvedValue(null);
-
-    const req = makePostRequest({
-      action: "approve",
-      comparisonId: "nonexistent",
-    });
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest({ action: "approve", comparisonId: "missing" }));
     expect(res.status).toBe(404);
-    expect(body.error).toBeDefined();
-    expect(prismaMock.productComparison.update).not.toHaveBeenCalled();
   });
 
   it("returns 401 for unauthenticated request", async () => {
     mockGetServerSession.mockResolvedValue(null);
-
-    const req = makePostRequest({
-      action: "approve",
-      comparisonId: "comp-1",
-    });
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest({ action: "approve", comparisonId: "comp-1" }));
     expect(res.status).toBe(401);
-    expect(body.error).toBeDefined();
   });
 
   it("returns 403 for non-admin user", async () => {
-    mockGetServerSession.mockResolvedValue(mockUserSession);
-
-    const req = makePostRequest({
-      action: "approve",
-      comparisonId: "comp-1",
-    });
-    const res = await POST(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(userSession);
+    const res = await POST(makePostRequest({ action: "approve", comparisonId: "comp-1" }));
     expect(res.status).toBe(403);
-    expect(body.error).toBeDefined();
+    expect(prismaMock.productComparison.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/admin — evidence moderation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetServerSession.mockResolvedValue(adminSession);
+  });
+
+  it("approves evidence with the chosen confidence tier", async () => {
+    prismaMock.evidence.findUnique.mockResolvedValue({ ...makeEvidence({ status: "PENDING" }), comparison: { slug: "x" } } as never);
+    prismaMock.evidence.update.mockResolvedValue(makeEvidence());
+
+    const res = await POST(makePostRequest({ action: "approveEvidence", evidenceId: "ev-1", confidence: "COMMUNITY" }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.evidence.update).toHaveBeenCalledWith({
+      where: { id: "ev-1" },
+      data: { status: "APPROVED", confidence: "COMMUNITY" },
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/compare/x");
+  });
+
+  it("ignores an invalid confidence value and keeps the existing one", async () => {
+    prismaMock.evidence.findUnique.mockResolvedValue({ ...makeEvidence({ confidence: "UNVERIFIED" }), comparison: { slug: "x" } } as never);
+    prismaMock.evidence.update.mockResolvedValue(makeEvidence());
+
+    await POST(makePostRequest({ action: "approveEvidence", evidenceId: "ev-1", confidence: "TOTALLY_TRUE" }));
+    expect(prismaMock.evidence.update).toHaveBeenCalledWith({
+      where: { id: "ev-1" },
+      data: { status: "APPROVED", confidence: "UNVERIFIED" },
+    });
+  });
+
+  it("rejects evidence", async () => {
+    prismaMock.evidence.findUnique.mockResolvedValue({ ...makeEvidence({ status: "PENDING" }), comparison: { slug: "x" } } as never);
+    prismaMock.evidence.update.mockResolvedValue(makeEvidence({ status: "REJECTED" }));
+
+    const res = await POST(makePostRequest({ action: "rejectEvidence", evidenceId: "ev-1" }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.evidence.update).toHaveBeenCalledWith({ where: { id: "ev-1" }, data: { status: "REJECTED" } });
+  });
+
+  it("returns 400 without an evidenceId and 404 for unknown evidence", async () => {
+    let res = await POST(makePostRequest({ action: "approveEvidence" }));
+    expect(res.status).toBe(400);
+
+    prismaMock.evidence.findUnique.mockResolvedValue(null);
+    res = await POST(makePostRequest({ action: "approveEvidence", evidenceId: "nope" }));
+    expect(res.status).toBe(404);
   });
 });

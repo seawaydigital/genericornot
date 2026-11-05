@@ -11,7 +11,20 @@ export async function GET(
     where: { slug },
     include: {
       category: true,
-      evidence: { orderBy: { createdAt: "desc" } },
+      evidence: {
+        where: { status: "APPROVED" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          content: true,
+          url: true,
+          confidence: true,
+          createdAt: true,
+          user: { select: { username: true } },
+        },
+      },
     },
   });
 

@@ -1,42 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { prismaMock } from "@/test/mock-prisma";
+import { asMock, prismaMock } from "@/test/mock-prisma";
 
 // Import route handlers after mock is set up
 import { GET as getList } from "../route";
 import { GET as getSingle } from "../[slug]/route";
 import { NextRequest } from "next/server";
+import { makeCategory, makeComparison, makeEvidence } from "@/test/fixtures";
 
 const makeRequest = (url: string) => new NextRequest(`http://localhost${url}`);
 
-const mockCategory = {
-  id: "cat-1",
-  name: "Grocery",
-  slug: "grocery",
-  icon: "🛒",
-  comparisonCount: 5,
-};
+const mockCategory = makeCategory();
 
 const mockComparison = {
-  id: "comp-1",
-  slug: "generic-cereal-vs-kelloggs",
-  genericProductName: "Store Cereal",
-  genericBrand: "Great Value",
-  genericStore: "Walmart",
-  genericPrice: null,
-  genericImageUrl: null,
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
-  nameBrandPrice: null,
-  nameBrandImageUrl: null,
-  categoryId: "cat-1",
-  verdict: "SAME_QUALITY" as const,
-  confidenceScore: 80,
-  totalVotes: 40,
-  status: "APPROVED" as const,
-  rejectionReason: null,
-  submittedById: null,
-  createdAt: new Date("2026-01-01"),
-  updatedAt: new Date("2026-01-01"),
+  ...makeComparison({
+    slug: "generic-cereal-vs-kelloggs",
+    genericPrice: null,
+    nameBrandPrice: null,
+    verdict: "SAME_QUALITY",
+    confidenceScore: 80,
+    totalVotes: 40,
+    submittedById: null,
+  }),
   category: mockCategory,
 };
 
@@ -93,14 +77,26 @@ describe("GET /api/comparisons", () => {
     const req = makeRequest("/api/comparisons?verdict=SAME_QUALITY");
     await getList(req);
 
+    // Matches the verdict shoppers see: the community verdict, or the
+    // research verdict while the community verdict is still pending.
     expect(prismaMock.productComparison.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           status: "APPROVED",
-          verdict: "SAME_QUALITY",
+          OR: [{ verdict: "SAME_QUALITY" }, { verdict: "PENDING", editorialVerdict: "SAME_QUALITY" }],
         }),
       })
     );
+  });
+
+  it("ignores unknown verdict values", async () => {
+    prismaMock.productComparison.findMany.mockResolvedValue([mockComparison]);
+    prismaMock.productComparison.count.mockResolvedValue(1);
+
+    await getList(makeRequest("/api/comparisons?verdict=BOGUS"));
+
+    const where = prismaMock.productComparison.findMany.mock.calls[0][0]?.where;
+    expect(where).toEqual({ status: "APPROVED" });
   });
 
   it("sorts by createdAt when specified", async () => {
@@ -152,19 +148,7 @@ describe("GET /api/comparisons", () => {
 });
 
 describe("GET /api/comparisons/[slug]", () => {
-  const mockEvidence = [
-    {
-      id: "ev-1",
-      comparisonId: "comp-1",
-      userId: "user-1",
-      type: "PHOTO" as const,
-      title: "Side by side comparison",
-      content: "They look identical",
-      url: null,
-      imageUrl: null,
-      createdAt: new Date("2026-01-02"),
-    },
-  ];
+  const mockEvidence = [makeEvidence({ type: "PHOTO", title: "Side by side comparison", content: "They look identical" })];
 
   const mockVoteBreakdown = [
     { value: "SAME_QUALITY" as const, _count: { value: 30 } },
@@ -178,8 +162,8 @@ describe("GET /api/comparisons/[slug]", () => {
 
   it("returns comparison with category, evidence, and vote breakdown", async () => {
     const fullComparison = { ...mockComparison, evidence: mockEvidence };
-    prismaMock.productComparison.findUnique.mockResolvedValue(fullComparison);
-    prismaMock.vote.groupBy.mockResolvedValue(mockVoteBreakdown as any);
+    prismaMock.productComparison.findUnique.mockResolvedValue(fullComparison as never);
+    asMock(prismaMock.vote.groupBy).mockResolvedValue(mockVoteBreakdown as never);
 
     const req = makeRequest("/api/comparisons/generic-cereal-vs-kelloggs");
     const res = await getSingle(req, {
@@ -192,6 +176,18 @@ describe("GET /api/comparisons/[slug]", () => {
     expect(body.comparison.category).toEqual(mockCategory);
     expect(body.comparison.evidence).toHaveLength(1);
     expect(body.voteBreakdown).toEqual(mockVoteBreakdown);
+  });
+
+  it("only includes approved evidence", async () => {
+    prismaMock.productComparison.findUnique.mockResolvedValue({ ...mockComparison, evidence: [] } as never);
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([] as never);
+
+    await getSingle(makeRequest("/api/comparisons/generic-cereal-vs-kelloggs"), {
+      params: Promise.resolve({ slug: "generic-cereal-vs-kelloggs" }),
+    });
+
+    const args = prismaMock.productComparison.findUnique.mock.calls[0][0] as { include: { evidence: { where: unknown } } };
+    expect(args.include.evidence.where).toEqual({ status: "APPROVED" });
   });
 
   it("returns 404 for non-existent slug", async () => {
@@ -214,7 +210,7 @@ describe("GET /api/comparisons/[slug]", () => {
       evidence: [],
     };
     prismaMock.productComparison.findUnique.mockResolvedValue(
-      pendingComparison
+      pendingComparison as never
     );
 
     const req = makeRequest("/api/comparisons/generic-cereal-vs-kelloggs");

@@ -54,10 +54,13 @@ async function searchWithVector(
     genericBrand: string;
     genericStore: string;
     genericPrice: number | null;
+    genericSize: string | null;
     nameBrandProductName: string;
     nameBrand: string;
     nameBrandPrice: number | null;
+    nameBrandSize: string | null;
     verdict: string;
+    editorialVerdict: string | null;
     confidenceScore: number;
     totalVotes: number;
     categoryId: string;
@@ -67,9 +70,9 @@ async function searchWithVector(
   }>>(
     `SELECT
       pc.id, pc.slug,
-      pc."genericProductName", pc."genericBrand", pc."genericStore", pc."genericPrice",
-      pc."nameBrandProductName", pc."nameBrand", pc."nameBrandPrice",
-      pc.verdict, pc."confidenceScore", pc."totalVotes", pc."categoryId",
+      pc."genericProductName", pc."genericBrand", pc."genericStore", pc."genericPrice", pc."genericSize",
+      pc."nameBrandProductName", pc."nameBrand", pc."nameBrandPrice", pc."nameBrandSize",
+      pc.verdict, pc."editorialVerdict", pc."confidenceScore", pc."totalVotes", pc."categoryId",
       c.name as "categoryName", c.icon as "categoryIcon",
       (
         ts_rank(pc."searchVector", to_tsquery('english', $1)) * 2 +

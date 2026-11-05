@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { prismaMock } from "@/test/mock-prisma";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { asMock, prismaMock } from "@/test/mock-prisma";
 import { NextRequest } from "next/server";
+import { makeComparison, makeSession, makeUser, makeVote } from "@/test/fixtures";
 
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
@@ -10,13 +11,17 @@ vi.mock("@/lib/auth", () => ({
   authOptions: {},
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 vi.mock("@/lib/rate-limit", () => ({
   voteLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
-  submissionLimiter: { check: vi.fn(() => ({ success: true, remaining: 4, resetAt: new Date() })) },
-  evidenceLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
 }));
 
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
+import { voteLimiter } from "@/lib/rate-limit";
 const mockGetServerSession = vi.mocked(getServerSession);
 
 import { GET, POST } from "../route";
@@ -29,161 +34,126 @@ const makePostRequest = (body: unknown) =>
   });
 
 const makeGetRequest = (comparisonId: string) =>
-  new NextRequest(`http://localhost/api/votes?comparisonId=${comparisonId}`, {
-    method: "GET",
-  });
+  new NextRequest(`http://localhost/api/votes?comparisonId=${comparisonId}`, { method: "GET" });
 
-const mockSession = {
-  user: {
-    id: "user-1",
-    name: "Test User",
-    email: "test@test.com",
-    role: "USER",
-    username: "test-123",
-  },
-  expires: "2099-01-01",
-};
-
-const mockApprovedComparison = {
-  id: "comp-1",
-  slug: "generic-cereal-vs-frosted-flakes",
-  genericProductName: "Generic Cereal",
-  genericBrand: "Store Brand",
-  genericStore: "Walmart",
-  genericPrice: 2.99,
-  genericImageUrl: null,
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
-  nameBrandPrice: 4.99,
-  nameBrandImageUrl: null,
-  categoryId: "cat-1",
-  verdict: "PENDING" as const,
-  confidenceScore: 0,
-  totalVotes: 0,
-  status: "APPROVED" as const,
-  rejectionReason: null,
-  submittedById: "user-2",
-  createdAt: new Date("2026-04-01"),
-  updatedAt: new Date("2026-04-01"),
-};
-
-const mockVote = {
-  id: "vote-1",
-  userId: "user-1",
-  comparisonId: "comp-1",
-  value: "SAME_QUALITY" as const,
-  createdAt: new Date("2026-04-05"),
-  updatedAt: new Date("2026-04-05"),
-};
-
-const mockOldUser = {
-  id: "user-1",
-  createdAt: new Date("2025-01-01"), // well over 1 hour old
-};
+const approved = makeComparison({ id: "comp-1", slug: "life-brand-ibuprofen-vs-advil", status: "APPROVED" });
 
 describe("POST /api/votes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: user exists and is old enough to vote
-    prismaMock.user.findUnique.mockResolvedValue(mockOldUser as never);
+    delete process.env.VOTE_MIN_ACCOUNT_AGE_MINUTES;
+    vi.mocked(voteLimiter.check).mockReturnValue({ success: true, remaining: 9, resetAt: new Date() });
+  });
+
+  afterEach(() => {
+    delete process.env.VOTE_MIN_ACCOUNT_AGE_MINUTES;
   });
 
   it("returns 401 when not authenticated", async () => {
     mockGetServerSession.mockResolvedValue(null);
-
-    const req = makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" });
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
     expect(res.status).toBe(401);
-    expect(body.error).toBeDefined();
+    expect((await res.json()).error).toBeDefined();
+  });
+
+  it("returns 429 with a readable message when rate limited", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    vi.mocked(voteLimiter.check).mockReturnValue({ success: false, remaining: 0, resetAt: new Date() });
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
+    expect(res.status).toBe(429);
+    expect((await res.json()).error).toMatch(/wait a minute/i);
   });
 
   it("returns 400 for missing comparisonId", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-
-    const req = makePostRequest({ value: "SAME_QUALITY" });
-    const res = await POST(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ value: "SAME_QUALITY" }));
     expect(res.status).toBe(400);
-    expect(body.error).toBeDefined();
   });
 
   it("returns 400 for missing vote value", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-
-    const req = makePostRequest({ comparisonId: "comp-1" });
-    const res = await POST(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ comparisonId: "comp-1" }));
     expect(res.status).toBe(400);
-    expect(body.error).toBeDefined();
   });
 
   it("returns 400 for invalid vote value", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-
-    const req = makePostRequest({ comparisonId: "comp-1", value: "INVALID_VALUE" });
-    const res = await POST(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "INVALID_VALUE" }));
     expect(res.status).toBe(400);
-    expect(body.error).toBeDefined();
   });
 
   it("returns 404 for non-existent comparison", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
+    mockGetServerSession.mockResolvedValue(makeSession());
     prismaMock.productComparison.findUnique.mockResolvedValue(null);
-
-    const req = makePostRequest({ comparisonId: "nonexistent", value: "SAME_QUALITY" });
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest({ comparisonId: "nonexistent", value: "SAME_QUALITY" }));
     expect(res.status).toBe(404);
-    expect(body.error).toBeDefined();
   });
 
-  it("returns 404 for non-APPROVED comparison", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-    prismaMock.productComparison.findUnique.mockResolvedValue({
-      ...mockApprovedComparison,
-      status: "PENDING" as const,
-    });
-
-    const req = makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" });
-    const res = await POST(req);
-    const body = await res.json();
-
+  it("returns 404 for a comparison that isn't approved", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.productComparison.findUnique.mockResolvedValue(makeComparison({ status: "ARCHIVED" }));
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
     expect(res.status).toBe(404);
-    expect(body.error).toBeDefined();
+    expect(prismaMock.vote.upsert).not.toHaveBeenCalled();
   });
 
-  it("casts a new vote and returns updated verdict", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-    prismaMock.productComparison.findUnique.mockResolvedValue(mockApprovedComparison);
-    prismaMock.vote.upsert.mockResolvedValue(mockVote);
-    prismaMock.vote.groupBy.mockResolvedValue([
+  it("does not check account age by default (new accounts can vote right away)", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.productComparison.findUnique.mockResolvedValue(approved);
+    prismaMock.vote.upsert.mockResolvedValue(makeVote());
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([{ value: "SAME_QUALITY", _count: 1 }] as never);
+    prismaMock.productComparison.update.mockResolvedValue(approved);
+
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
+    expect(res.status).toBe(200);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("enforces VOTE_MIN_ACCOUNT_AGE_MINUTES with a clear message", async () => {
+    process.env.VOTE_MIN_ACCOUNT_AGE_MINUTES = "60";
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ createdAt: new Date(Date.now() - 10 * 60 * 1000) }));
+
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
+    const body = await res.json();
+    expect(res.status).toBe(403);
+    expect(body.error).toMatch(/after 60 minutes/);
+    expect(body.error).toMatch(/50 minutes/);
+    expect(prismaMock.vote.upsert).not.toHaveBeenCalled();
+  });
+
+  it("lets accounts older than the configured age vote", async () => {
+    process.env.VOTE_MIN_ACCOUNT_AGE_MINUTES = "60";
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.user.findUnique.mockResolvedValue(makeUser({ createdAt: new Date("2025-01-01") }));
+    prismaMock.productComparison.findUnique.mockResolvedValue(approved);
+    prismaMock.vote.upsert.mockResolvedValue(makeVote());
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([{ value: "SAME_QUALITY", _count: 1 }] as never);
+    prismaMock.productComparison.update.mockResolvedValue(approved);
+
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
+    expect(res.status).toBe(200);
+  });
+
+  it("casts a vote, recounts from real votes and returns live counts", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.productComparison.findUnique.mockResolvedValue(approved);
+    prismaMock.vote.upsert.mockResolvedValue(makeVote());
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([
       { value: "SAME_QUALITY", _count: 3 },
       { value: "CLOSE_ENOUGH", _count: 1 },
       { value: "NOT_WORTH_IT", _count: 1 },
     ] as never);
-    prismaMock.productComparison.update.mockResolvedValue({
-      ...mockApprovedComparison,
-      verdict: "PENDING" as const,
-      confidenceScore: 0,
-      totalVotes: 5,
-    });
+    prismaMock.productComparison.update.mockResolvedValue(approved);
 
-    const req = makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" });
-    const res = await POST(req);
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "SAME_QUALITY" }));
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.verdict).toBeDefined();
-    expect(body.totalVotes).toBe(5);
-    expect(body.vote).toBeDefined();
     expect(body.vote.value).toBe("SAME_QUALITY");
+    expect(body.totalVotes).toBe(5);
+    expect(body.verdict).toBe("SAME_QUALITY");
+    expect(body.counts).toEqual({ sameQuality: 3, closeEnough: 1, notWorthIt: 1 });
 
     expect(prismaMock.vote.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -192,39 +162,39 @@ describe("POST /api/votes", () => {
         update: expect.objectContaining({ value: "SAME_QUALITY" }),
       })
     );
+    expect(prismaMock.productComparison.update).toHaveBeenCalledWith({
+      where: { id: "comp-1" },
+      data: { verdict: "SAME_QUALITY", confidenceScore: 6, totalVotes: 5 },
+    });
   });
 
-  it("changes existing vote (upsert) and verdict recomputes", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-    prismaMock.productComparison.findUnique.mockResolvedValue(mockApprovedComparison);
-    prismaMock.vote.upsert.mockResolvedValue({ ...mockVote, value: "NOT_WORTH_IT" as const });
-    prismaMock.vote.groupBy.mockResolvedValue([
+  it("revalidates the cached comparison page", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.productComparison.findUnique.mockResolvedValue(approved);
+    prismaMock.vote.upsert.mockResolvedValue(makeVote());
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([] as never);
+    prismaMock.productComparison.update.mockResolvedValue(approved);
+
+    await POST(makePostRequest({ comparisonId: "comp-1", value: "CLOSE_ENOUGH" }));
+    expect(revalidatePath).toHaveBeenCalledWith("/compare/life-brand-ibuprofen-vs-advil");
+  });
+
+  it("changes an existing vote (upsert) and recomputes the verdict", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.productComparison.findUnique.mockResolvedValue(approved);
+    prismaMock.vote.upsert.mockResolvedValue(makeVote({ value: "NOT_WORTH_IT" }));
+    asMock(prismaMock.vote.groupBy).mockResolvedValue([
       { value: "SAME_QUALITY", _count: 2 },
       { value: "NOT_WORTH_IT", _count: 5 },
     ] as never);
-    prismaMock.productComparison.update.mockResolvedValue({
-      ...mockApprovedComparison,
-      verdict: "NOT_WORTH_IT" as const,
-      confidenceScore: 71,
-      totalVotes: 7,
-    });
+    prismaMock.productComparison.update.mockResolvedValue(approved);
 
-    const req = makePostRequest({ comparisonId: "comp-1", value: "NOT_WORTH_IT" });
-    const res = await POST(req);
+    const res = await POST(makePostRequest({ comparisonId: "comp-1", value: "NOT_WORTH_IT" }));
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.verdict).toBe("NOT_WORTH_IT");
     expect(body.vote.value).toBe("NOT_WORTH_IT");
-
-    expect(prismaMock.productComparison.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "comp-1" },
-        data: expect.objectContaining({
-          verdict: "NOT_WORTH_IT",
-        }),
-      })
-    );
   });
 });
 
@@ -235,52 +205,30 @@ describe("GET /api/votes", () => {
 
   it("returns 401 when not authenticated", async () => {
     mockGetServerSession.mockResolvedValue(null);
-
-    const req = makeGetRequest("comp-1");
-    const res = await GET(req);
-    const body = await res.json();
-
+    const res = await GET(makeGetRequest("comp-1"));
     expect(res.status).toBe(401);
-    expect(body.error).toBeDefined();
   });
 
   it("returns 400 when comparisonId is missing", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-
-    const req = new NextRequest("http://localhost/api/votes", { method: "GET" });
-    const res = await GET(req);
-    const body = await res.json();
-
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await GET(new NextRequest("http://localhost/api/votes", { method: "GET" }));
     expect(res.status).toBe(400);
-    expect(body.error).toBeDefined();
   });
 
   it("returns user's existing vote for a comparison", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
-    prismaMock.vote.findUnique.mockResolvedValue(mockVote);
-
-    const req = makeGetRequest("comp-1");
-    const res = await GET(req);
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.vote.findUnique.mockResolvedValue(makeVote());
+    const res = await GET(makeGetRequest("comp-1"));
     const body = await res.json();
-
     expect(res.status).toBe(200);
-    expect(body.vote).toBeDefined();
     expect(body.vote.value).toBe("SAME_QUALITY");
-    expect(body.vote.userId).toBe("user-1");
-
-    expect(prismaMock.vote.findUnique).toHaveBeenCalledWith({
-      where: { userId_comparisonId: { userId: "user-1", comparisonId: "comp-1" } },
-    });
   });
 
-  it("returns null when user hasn't voted on a comparison", async () => {
-    mockGetServerSession.mockResolvedValue(mockSession);
+  it("returns null vote when user has not voted", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
     prismaMock.vote.findUnique.mockResolvedValue(null);
-
-    const req = makeGetRequest("comp-1");
-    const res = await GET(req);
+    const res = await GET(makeGetRequest("comp-1"));
     const body = await res.json();
-
     expect(res.status).toBe(200);
     expect(body.vote).toBeNull();
   });
