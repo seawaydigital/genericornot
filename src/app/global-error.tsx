@@ -14,13 +14,13 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en-CA">
       <body
         style={{
           margin: 0,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          background: "#fafaf8",
+          background: "#f6f4ee",
           minHeight: "100vh",
           display: "flex",
           alignItems: "center",
@@ -31,10 +31,15 @@ export default function GlobalError({
         <div style={{ maxWidth: "420px", width: "100%", textAlign: "center" }}>
           <p
             style={{
-              fontSize: "72px",
+              display: "inline-block",
+              fontSize: "28px",
               fontWeight: 700,
-              color: "#e5e7eb",
+              color: "#0d1b4a",
+              background: "#ffd23f",
+              borderRadius: "10px",
+              padding: "6px 16px",
               margin: 0,
+              transform: "rotate(-6deg)",
             }}
           >
             !
@@ -42,9 +47,9 @@ export default function GlobalError({
           <h1
             style={{
               marginTop: "16px",
-              fontSize: "24px",
+              fontSize: "28px",
               fontWeight: 700,
-              color: "#111827",
+              color: "#0b1533",
               letterSpacing: "-0.02em",
             }}
           >
@@ -53,8 +58,8 @@ export default function GlobalError({
           <p
             style={{
               marginTop: "8px",
-              color: "#6b7280",
-              fontSize: "14px",
+              color: "#545a6c",
+              fontSize: "16px",
               lineHeight: 1.6,
             }}
           >
@@ -64,7 +69,7 @@ export default function GlobalError({
             <p
               style={{
                 marginTop: "12px",
-                color: "#d1d5db",
+                color: "#666c7f",
                 fontSize: "12px",
                 fontFamily: "monospace",
               }}
@@ -76,9 +81,10 @@ export default function GlobalError({
             onClick={reset}
             style={{
               marginTop: "32px",
-              background: "linear-gradient(to bottom, #0d1b4a, #162d6b)",
+              background: "#0d1b4a",
               color: "white",
               border: "none",
+              minHeight: "44px",
               padding: "12px 24px",
               borderRadius: "12px",
               fontSize: "14px",

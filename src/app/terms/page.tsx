@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
 };
 
-const linkClass = "text-[#0d1b4a] hover:text-[#1e3a7a] underline-offset-2 hover:underline";
+const linkClass = "font-medium text-brand-500 underline underline-offset-2 hover:text-brand";
 
 export default function TermsPage() {
   return (

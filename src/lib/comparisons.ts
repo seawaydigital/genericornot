@@ -77,7 +77,7 @@ export interface ComparisonCardData {
   editorialVerdict: string | null;
   confidenceScore: number;
   totalVotes: number;
-  category?: { name: string; icon: string };
+  category?: { name: string; icon: string; slug?: string };
 }
 
 /** Plain, serialisable card data (Prisma Decimals become numbers). */
@@ -98,6 +98,8 @@ export function toCardData(row: CardRow): ComparisonCardData {
     editorialVerdict: row.editorialVerdict ?? null,
     confidenceScore: row.confidenceScore,
     totalVotes: row.totalVotes,
-    category: row.category ? { name: row.category.name, icon: row.category.icon } : undefined,
+    category: row.category
+      ? { name: row.category.name, icon: row.category.icon, ...(row.category.slug ? { slug: row.category.slug } : {}) }
+      : undefined,
   };
 }

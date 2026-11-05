@@ -55,10 +55,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-CA" className={`${dmSans.variable} ${instrumentSerif.variable}`}>
-      <body className={`${dmSans.className} bg-[#fafaf8] text-[#1a1a2e] min-h-screen flex flex-col antialiased`}>
+      <body className={`${dmSans.className} flex min-h-screen flex-col bg-paper text-ink antialiased`}>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-[#0d1b4a] focus:shadow"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand focus:shadow-lift"
         >
           Skip to content
         </a>

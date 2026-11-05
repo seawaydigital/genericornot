@@ -2,19 +2,19 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { computeSavings, tallyVotes } from "@/lib/verdict";
-import { decimalToNumber } from "@/lib/comparisons";
+import { tallyVotes } from "@/lib/verdict";
+import { comparisonCardInclude, decimalToNumber, toCardData, type ComparisonCardData } from "@/lib/comparisons";
 import { getComparisonMetadata, getComparisonJsonLd } from "@/lib/seo";
-import { BrandHero } from "@/components/comparison/BrandHero";
-import { GenericAlternative } from "@/components/comparison/GenericAlternative";
-import { PriceComparison } from "@/components/comparison/PriceComparison";
+import { ComparisonHero } from "@/components/comparison/ComparisonHero";
 import { HealthNotice } from "@/components/comparison/HealthNotice";
 import { QuickFacts } from "@/components/comparison/QuickFacts";
 import { EvidenceList } from "@/components/comparison/EvidenceList";
 import { VotePanel } from "@/components/comparison/VotePanel";
 import { EvidenceForm } from "@/components/comparison/EvidenceForm";
 import { AdminTools } from "@/components/comparison/AdminTools";
+import { ProductCard } from "@/components/comparison/ProductCard";
 
 // Cached and shared by every visitor; per-user state (your vote) loads
 // client-side, and votes/evidence/admin actions revalidate this path.
@@ -29,6 +29,8 @@ export async function generateStaticParams() {
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
+
+const RELATED_LIMIT = 3;
 
 const getComparison = cache(async (slug: string) => {
   try {
@@ -58,6 +60,22 @@ const getComparison = cache(async (slug: string) => {
   }
 });
 
+/** Other approved swaps in the same category, most-voted first. */
+async function getRelated(comparisonId: string, categoryId: string | null): Promise<ComparisonCardData[]> {
+  if (!categoryId) return [];
+  try {
+    const rows = await prisma.productComparison.findMany({
+      where: { categoryId, status: "APPROVED", id: { not: comparisonId } },
+      include: comparisonCardInclude,
+      orderBy: [{ featured: "desc" }, { totalVotes: "desc" }, { createdAt: "desc" }],
+      take: RELATED_LIMIT,
+    });
+    return rows.map(toCardData);
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const data = await getComparison(slug);
@@ -85,8 +103,8 @@ export default async function ComparisonPage({ params }: PageProps) {
   const { comparison, counts } = data;
   const genericPrice = decimalToNumber(comparison.genericPrice);
   const nameBrandPrice = decimalToNumber(comparison.nameBrandPrice);
-  const savings = computeSavings(genericPrice, nameBrandPrice, comparison.genericSize, comparison.nameBrandSize);
-  const categoryIcon = comparison.category?.icon ?? "\u{1F4E6}";
+  const totalVotes = counts.sameQuality + counts.closeEnough + counts.notWorthIt;
+  const related = await getRelated(comparison.id, comparison.categoryId);
 
   const evidence = comparison.evidence.map((e) => ({
     id: e.id,
@@ -113,51 +131,72 @@ export default async function ComparisonPage({ params }: PageProps) {
         // "</script>" could break out of the tag. Escape it.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <div className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-12">
-        {comparison.category && (
-          <nav aria-label="Breadcrumb" className="mb-4 text-xs text-gray-500">
-            <Link href="/categories" className="hover:text-gray-800">Categories</Link>
-            <span className="mx-1.5" aria-hidden="true">/</span>
-            <Link href={`/categories/${comparison.category.slug}`} className="hover:text-gray-800">
-              {comparison.category.name}
-            </Link>
-          </nav>
-        )}
+      <div className="mx-auto max-w-6xl px-4 pb-16 pt-5 md:px-6 md:pt-8">
+        <nav aria-label="Breadcrumb" className="-my-2 mb-3">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-muted">
+            <li>
+              <Link href="/" className="inline-flex min-h-11 items-center rounded-md px-1 transition-colors hover:text-ink">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden="true">
+              <ChevronRight className="h-3.5 w-3.5 text-subtle" />
+            </li>
+            <li>
+              <Link href="/categories" className="inline-flex min-h-11 items-center rounded-md px-1 transition-colors hover:text-ink">
+                Categories
+              </Link>
+            </li>
+            {comparison.category && (
+              <>
+                <li aria-hidden="true">
+                  <ChevronRight className="h-3.5 w-3.5 text-subtle" />
+                </li>
+                <li>
+                  <Link
+                    href={`/categories/${comparison.category.slug}`}
+                    className="inline-flex min-h-11 items-center rounded-md px-1 font-medium text-ink transition-colors hover:text-brand-500"
+                  >
+                    {comparison.category.name}
+                  </Link>
+                </li>
+              </>
+            )}
+          </ol>
+        </nav>
 
-        {/* One DOM order for every screen size: on mobile the vote card sits
-            right after the products; on desktop grid placement moves it into
-            a sticky sidebar. A single VotePanel keeps one source of truth. */}
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:items-start">
-          <div className="lg:col-span-2 space-y-6">
-            <BrandHero
-              nameBrandProductName={comparison.nameBrandProductName}
-              nameBrand={comparison.nameBrand}
-              nameBrandPrice={nameBrandPrice}
-              nameBrandSize={comparison.nameBrandSize}
-              verdict={comparison.verdict}
-              editorialVerdict={comparison.editorialVerdict}
-              editorialNote={comparison.editorialNote}
-              confidenceScore={comparison.confidenceScore}
-              totalVotes={counts.sameQuality + counts.closeEnough + counts.notWorthIt}
-              savings={savings}
-              categoryIcon={categoryIcon}
-              lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
-              flaggedOutdated={comparison.flaggedOutdated}
-              slug={comparison.slug}
-            />
+        <ComparisonHero
+          slug={comparison.slug}
+          nameBrandProductName={comparison.nameBrandProductName}
+          nameBrand={comparison.nameBrand}
+          nameBrandPrice={nameBrandPrice}
+          nameBrandSize={comparison.nameBrandSize}
+          genericProductName={comparison.genericProductName}
+          genericBrand={comparison.genericBrand}
+          genericStore={comparison.genericStore}
+          genericPrice={genericPrice}
+          genericSize={comparison.genericSize}
+          verdict={comparison.verdict}
+          editorialVerdict={comparison.editorialVerdict}
+          editorialNote={comparison.editorialNote}
+          confidenceScore={comparison.confidenceScore}
+          totalVotes={totalVotes}
+          lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
+          flaggedOutdated={comparison.flaggedOutdated}
+        />
 
-            <GenericAlternative
-              genericProductName={comparison.genericProductName}
-              genericBrand={comparison.genericBrand}
-              genericStore={comparison.genericStore}
-              genericPrice={genericPrice}
-              genericSize={comparison.genericSize}
-              categoryIcon={categoryIcon}
-            />
-          </div>
+        {/* One DOM order for every screen size. On mobile: health note, vote,
+            quick facts, then the evidence. On desktop the vote card and quick
+            facts move into a sticky sidebar. The "auto 1fr" rows keep the
+            sidebar's extra height out of the gap under the health note. */}
+        <div className="mt-8 flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
+          <HealthNotice categorySlug={comparison.category?.slug} className="lg:col-start-1 lg:row-start-1" />
 
-          <aside className="space-y-6 lg:col-start-3 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-20">
-            <div className="glass rounded-2xl p-6">
+          <aside
+            aria-label="Vote and quick facts"
+            className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          >
+            <div id="vote" className="card scroll-mt-24 p-6">
               <VotePanel
                 comparisonId={comparison.id}
                 slug={comparison.slug}
@@ -170,18 +209,7 @@ export default async function ComparisonPage({ params }: PageProps) {
             <QuickFacts evidence={evidence} />
           </aside>
 
-          <div className="lg:col-span-2 space-y-6">
-            <PriceComparison
-              genericBrand={comparison.genericBrand}
-              genericPrice={genericPrice}
-              genericSize={comparison.genericSize}
-              nameBrand={comparison.nameBrand}
-              nameBrandPrice={nameBrandPrice}
-              nameBrandSize={comparison.nameBrandSize}
-            />
-
-            <HealthNotice categorySlug={comparison.category?.slug} />
-
+          <div className="flex min-w-0 flex-col gap-8 lg:col-start-1">
             <EvidenceList evidence={evidence} />
 
             <EvidenceForm comparisonId={comparison.id} slug={comparison.slug} />
@@ -189,6 +217,33 @@ export default async function ComparisonPage({ params }: PageProps) {
             <AdminTools comparisonId={comparison.id} />
           </div>
         </div>
+
+        {related.length > 0 && comparison.category && (
+          <section aria-labelledby="related-heading" className="mt-16 border-t border-line pt-10">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="eyebrow">Keep comparing</p>
+                <h2 id="related-heading" className="mt-1.5 font-display text-3xl leading-none tracking-tight text-ink sm:text-4xl">
+                  More swaps in {comparison.category.name}
+                </h2>
+              </div>
+              <Link
+                href={`/categories/${comparison.category.slug}`}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-brand-500 transition-colors hover:text-brand"
+              >
+                All {comparison.category.name} swaps
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            </div>
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {related.map((item) => (
+                <li key={item.id}>
+                  <ProductCard {...item} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   );

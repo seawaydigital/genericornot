@@ -54,10 +54,22 @@ describe("Navbar", () => {
     expect(signInLinks[0]).toHaveAttribute("href", "/auth/signin");
   });
 
-  it("renders Contribute link", () => {
+  it("renders the Add a comparison link", () => {
     render(<Navbar />);
-    const contributeLinks = screen.getAllByRole("link", { name: /contribute/i });
-    expect(contributeLinks.length).toBeGreaterThan(0);
-    expect(contributeLinks[0]).toHaveAttribute("href", "/submit");
+    const addLinks = screen.getAllByRole("link", { name: /add a comparison/i });
+    expect(addLinks.length).toBeGreaterThan(0);
+    expect(addLinks[0]).toHaveAttribute("href", "/submit");
+  });
+
+  it("names the account menu after the signed-in nickname", async () => {
+    const { useSession } = await import("next-auth/react");
+    vi.mocked(useSession).mockReturnValueOnce({
+      data: { user: { id: "u1", role: "USER", username: "thrifty-loon-1234" }, expires: "2099-01-01T00:00:00.000Z" },
+      status: "authenticated",
+      update: vi.fn(),
+    });
+    render(<Navbar />);
+    expect(screen.getByRole("button", { name: /account menu for thrifty-loon-1234/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 });

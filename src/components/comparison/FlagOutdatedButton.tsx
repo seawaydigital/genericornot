@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { Flag } from "lucide-react";
 
 interface FlagOutdatedButtonProps {
   slug: string;
@@ -41,7 +42,7 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
   }
 
   if (status === "done") {
-    return <p className="text-sm text-gray-500 italic" role="status">{message}</p>;
+    return <p className="text-xs font-medium text-muted" role="status">{message}</p>;
   }
 
   return (
@@ -49,16 +50,17 @@ export function FlagOutdatedButton({ slug }: FlagOutdatedButtonProps) {
       <button
         onClick={handleFlag}
         disabled={status === "loading"}
-        className="text-xs text-gray-500 hover:text-amber-700 underline-offset-2 hover:underline transition-colors disabled:opacity-50"
+        className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted transition-colors hover:bg-paper hover:text-close disabled:opacity-50"
       >
+        <Flag aria-hidden="true" className="h-3.5 w-3.5" />
         {status === "loading" ? "Reporting…" : "Report outdated info"}
       </button>
-      {status === "error" && <p className="text-xs text-red-600" role="alert">{message}</p>}
+      {status === "error" && <p className="text-xs font-medium text-bad" role="alert">{message}</p>}
       {status === "signin" && (
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted">
           <Link
             href={`/auth/signin?callbackUrl=${encodeURIComponent(`/compare/${slug}`)}`}
-            className="text-[#0d1b4a] font-medium hover:underline"
+            className="font-semibold text-brand-500 hover:underline"
           >
             Sign in
           </Link>{" "}

@@ -66,7 +66,7 @@ export function EvidenceQueue({ initialEvidence }: { initialEvidence: PendingEvi
         return (
           <div key={ev.id} className="glass rounded-2xl p-5 space-y-3" data-testid="evidence-item">
             <div>
-              <a href={`/compare/${ev.comparison.slug}`} className="text-xs text-[#0d1b4a] hover:underline" target="_blank" rel="noopener noreferrer">
+              <a href={`/compare/${ev.comparison.slug}`} className="text-xs font-medium text-brand-500 hover:underline" target="_blank" rel="noopener noreferrer">
                 {ev.comparison.genericProductName} vs {ev.comparison.nameBrandProductName}
               </a>
               <h3 className="text-gray-900 font-semibold text-sm mt-1">{ev.title}</h3>
@@ -79,7 +79,7 @@ export function EvidenceQueue({ initialEvidence }: { initialEvidence: PendingEvi
             {ev.url && (
               <p className="text-xs break-all">
                 Link:{" "}
-                <a href={ev.url} target="_blank" rel="nofollow ugc noopener noreferrer" className="text-[#0d1b4a] hover:underline">
+                <a href={ev.url} target="_blank" rel="nofollow ugc noopener noreferrer" className="text-brand-500 hover:underline">
                   {ev.url}
                 </a>
               </p>

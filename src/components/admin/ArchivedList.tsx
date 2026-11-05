@@ -44,7 +44,7 @@ export function ArchivedList({ initialArchived }: { initialArchived: ArchivedCom
 
   return (
     <details className="glass rounded-2xl p-5">
-      <summary className="cursor-pointer text-sm font-medium text-gray-700">
+      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink">
         Show {items.length} archived comparison{items.length === 1 ? "" : "s"}
       </summary>
       {error && <div className="mt-3 bg-red-50 rounded-xl p-3 text-red-600 text-sm">{error}</div>}

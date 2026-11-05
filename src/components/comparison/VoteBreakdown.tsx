@@ -7,52 +7,34 @@ interface VoteBreakdownProps {
   totalVotes: number;
 }
 
-export function VoteBreakdown({
-  sameQuality,
-  closeEnough,
-  notWorthIt,
-  totalVotes,
-}: VoteBreakdownProps) {
+/** One labelled bar per option: easier to read than a single stacked bar. */
+export function VoteBreakdown({ sameQuality, closeEnough, notWorthIt, totalVotes }: VoteBreakdownProps) {
   const total = totalVotes || 0;
-
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const rows = [
-    { key: "SAME_QUALITY", count: sameQuality, pct: pct(sameQuality), bar: "bg-emerald-500", text: "text-emerald-700" },
-    { key: "CLOSE_ENOUGH", count: closeEnough, pct: pct(closeEnough), bar: "bg-amber-500", text: "text-amber-700" },
-    { key: "NOT_WORTH_IT", count: notWorthIt, pct: pct(notWorthIt), bar: "bg-red-500", text: "text-red-700" },
-  ];
+    { key: "SAME_QUALITY", count: sameQuality, bar: "bg-good" },
+    { key: "CLOSE_ENOUGH", count: closeEnough, bar: "bg-close" },
+    { key: "NOT_WORTH_IT", count: notWorthIt, bar: "bg-bad" },
+  ].map((r) => ({ ...r, pct: pct(r.count) }));
 
   return (
-    <div className="space-y-3">
-      {/* Stacked bar */}
-      <div
-        className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200"
-        role="img"
-        aria-label={
-          total > 0
-            ? rows.map((r) => `${VOTE_LABELS[r.key]} ${r.pct}%`).join(", ")
-            : "No votes yet"
-        }
-      >
-        {total > 0
-          ? rows.map((r) =>
-              r.pct > 0 ? (
-                <div key={r.key} className={`${r.bar} transition-all duration-300`} style={{ width: `${r.pct}%` }} />
-              ) : null
-            )
-          : null}
-      </div>
-
-      {/* Labels */}
-      <div className="grid grid-cols-3 gap-1 text-xs text-center">
-        {rows.map((r) => (
-          <div key={r.key}>
-            <p className={`${r.text} font-semibold`}>{r.pct}%</p>
-            <p className="text-gray-500 mt-0.5">{VOTE_LABELS[r.key]}</p>
-            <p className="text-gray-400">({r.count})</p>
+    <ul className="space-y-3" aria-label="Vote breakdown">
+      {rows.map((r) => (
+        <li key={r.key} data-testid={`breakdown-${r.key}`}>
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="font-medium text-ink">{VOTE_LABELS[r.key]}</span>
+            <span className="tabular-nums text-muted">
+              <span className="font-semibold text-ink">{r.pct}%</span>
+              <span className="ml-1.5">({r.count})</span>
+            </span>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper-deep">
+            {r.pct > 0 && (
+              <div className={`animate-bar h-full rounded-full ${r.bar}`} style={{ width: `${r.pct}%` }} />
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

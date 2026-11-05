@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 interface PopularChip {
   label: string;
@@ -14,11 +15,23 @@ interface SearchBarProps {
   /** Pre-fill the box, e.g. with the current query on the results page. */
   defaultValue?: string;
   autoFocus?: boolean;
+  /** "hero" is the big homepage/search-page box; "default" is compact. */
+  size?: "default" | "hero";
+  /** Centre the suggestion chips (used when the bar is centred). */
+  centerChips?: boolean;
 }
 
-export function SearchBar({ popular, className = "", defaultValue = "", autoFocus = false }: SearchBarProps) {
+export function SearchBar({
+  popular,
+  className = "",
+  defaultValue = "",
+  autoFocus = false,
+  size = "default",
+  centerChips = false,
+}: SearchBarProps) {
   const [query, setQuery] = useState(defaultValue);
   const router = useRouter();
+  const hero = size === "hero";
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,22 +48,17 @@ export function SearchBar({ popular, className = "", defaultValue = "", autoFocu
   return (
     <div className={className}>
       <form onSubmit={handleSubmit} role="search">
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
+        <div
+          className={`relative flex items-center border bg-surface transition-[border-color,box-shadow] focus-within:border-brand-500 ${
+            hero
+              ? "rounded-2xl border-line-strong shadow-lift focus-within:shadow-[0_0_0_4px_rgb(40_69_150/0.12),var(--shadow-lift)]"
+              : "rounded-xl border-line shadow-sm focus-within:shadow-[0_0_0_3px_rgb(40_69_150/0.12)]"
+          }`}
+        >
+          <Search
+            aria-hidden="true"
+            className={`pointer-events-none absolute text-subtle ${hero ? "left-4 h-5 w-5" : "left-3.5 h-4 w-4"}`}
+          />
           <label htmlFor="site-search" className="sr-only">
             Search products and brands
           </label>
@@ -61,20 +69,31 @@ export function SearchBar({ popular, className = "", defaultValue = "", autoFocu
             onChange={(e) => setQuery(e.target.value)}
             autoFocus={autoFocus}
             maxLength={100}
-            placeholder="Search a product or brand — e.g. Advil, Kraft Dinner, butter"
-            className="block w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-4 text-gray-900 placeholder-gray-400 focus:border-[#0d1b4a]/30 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200"
+            placeholder="Search a product or brand"
+            className={`block w-full min-w-0 bg-transparent text-ink placeholder:text-subtle focus:outline-none ${
+              hero ? "h-[3.75rem] pl-12 pr-[7.5rem] text-base sm:text-lg" : "h-11 pl-10 pr-24 text-[15px]"
+            }`}
           />
+          <button
+            type="submit"
+            className={`absolute right-2 inline-flex items-center justify-center rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-600 ${
+              hero ? "h-11 px-5 text-sm" : "h-8 px-3.5 text-sm"
+            }`}
+          >
+            Search
+          </button>
         </div>
       </form>
 
       {popular && popular.length > 0 && (
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <div className={`mt-4 flex flex-wrap items-center gap-2 ${centerChips ? "justify-center" : ""}`}>
+          <span className="mr-1 text-sm text-subtle">Popular:</span>
           {popular.map((chip) => (
             <button
               key={chip.query}
               onClick={() => handleChipClick(chip.query)}
               type="button"
-              className="rounded-full bg-gray-100 px-3.5 py-1 text-sm text-gray-600 transition-all duration-200 hover:bg-gray-200 hover:text-gray-800"
+              className="min-h-9 rounded-full border border-line bg-surface/80 px-3.5 py-1.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-surface"
             >
               {chip.label}
             </button>

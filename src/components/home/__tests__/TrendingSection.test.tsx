@@ -30,9 +30,9 @@ const comparisons = [
 ];
 
 describe("TrendingSection", () => {
-  it("renders the section heading as Popular Swaps", () => {
+  it("renders the section heading", () => {
     render(<TrendingSection comparisons={comparisons} />);
-    expect(screen.getByRole("heading", { name: /popular swaps/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /what canadians are comparing/i })).toBeInTheDocument();
   });
 
   it("renders the View all link", () => {

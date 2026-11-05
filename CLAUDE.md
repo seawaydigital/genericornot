@@ -19,19 +19,19 @@ Community-driven website where **Canadian shoppers** look up, vote on, and contr
 - **Brand Logos:** logo.dev API (free tier 500K req/month, token in `NEXT_PUBLIC_LOGO_DEV_TOKEN`)
 - **Email:** Resend API for magic link emails (free tier 3K/month)
 - **Hosting:** Vercel (auto-deploys from GitHub master branch)
-- **Testing:** Vitest 4.1 + React Testing Library + happy-dom 21 (476 tests)
+- **Testing:** Vitest 4.1 + React Testing Library + happy-dom 21 (472 tests)
+- **Icons:** lucide-react (pinned exact). SVG icons only — no emoji in the UI
 - **Search:** PostgreSQL full-text search (tsvector + trigram) with a trigger keeping `searchVector` current. Falls back to Prisma `contains` if tsvector is unavailable.
 
 ## Visual Design
 
-**Light editorial theme** inspired by Stripe/Apple aesthetics:
-- **Background:** Warm off-white (`#fafaf8`)
-- **Primary accent:** Navy blue (`#0d1b4a`) for links, buttons, branding
-- **Typography:** DM Sans (body) + Instrument Serif (headlines/logo italic accent)
-- **Cards:** White background with subtle gray border + shadow (defined as `glass` CSS utility)
-- **Verdict colors:** Emerald (Generic Worth It), Amber (Close Enough), Red (Stick with Brand)
-- **Footer tone:** Editorial — uppercase tracking, "Transparency is our only product", "Made in Canada"
-- **Comparison page:** 2-column layout on desktop (main content + sticky vote sidebar); on mobile the vote card sits right after the products (single `VotePanel`, CSS grid placement)
+**"Shelf tag" editorial theme** — warm paper, navy ink, a yellow sale-tag accent:
+- **Tokens** (`@theme` in `globals.css`): `paper #f6f4ee` background, `surface` white cards, `ink #0b1533` text, `brand #0d1b4a` navy (+ `brand-500 #284596` for links), `tag #ffd23f` yellow, `muted #545a6c` / `subtle #666c7f` secondary text (both WCAG AA on white), `line` borders. Use token classes (`bg-paper`, `text-muted`, `border-line`…), never raw hex.
+- **Verdict colours:** `good` (Generic Worth It), `close` (Close Enough), `bad` (Stick with Brand), `neutral` (Mixed / Awaiting) — each with `-bg` and `-line`. Always paired with an icon and words (`VERDICT_STYLES` in GenericStatusBadge).
+- **Typography:** DM Sans (`font-sans`, body) + Instrument Serif (`font-display`, headlines, italic accents). Prices use `tabular-nums`.
+- **Signature pieces:** the face-off (name brand vs store brand with a "vs" medallion), the yellow `sale-tag` savings badge, unit-price chips, `PageHeader` band (hero wash + dots) on every inner page.
+- **Comparison page:** full-width `ComparisonHero` face-off, then a 2-column grid (evidence left, sticky vote + quick facts right; on mobile the vote card follows the hero), then "More swaps in {category}".
+- **Accessibility:** 44px touch targets, visible focus rings (base layer `:focus-visible`), `prefers-reduced-motion` respected, one `h1` per page.
 
 ## Project Structure
 
@@ -58,14 +58,16 @@ src/
     opengraph-image.tsx   # Site-wide share image
     sitemap.ts (revalidates hourly), robots.ts, not-found.tsx, error.tsx, global-error.tsx
   components/
-    layout/               # Navbar (click menu, profile/admin links), Footer, SearchBar, Providers
-    comparison/           # ProductCard, GenericStatusBadge, BrandHero, GenericAlternative, PriceComparison,
-                          # VotePanel (logic) + VoteButtons/VoteBreakdown (presentational), EvidenceList,
-                          # EvidenceForm, QuickFacts, FreshnessIndicator, FlagOutdatedButton, HealthNotice,
-                          # AdminTools (admin-only inline "mark reviewed"/archive), VerdictBadge
-    category/, home/
+    layout/               # Navbar (click menu, profile/admin links), Footer, SearchBar, Logo, Providers
+    comparison/           # ComparisonHero (face-off + verdict band), ProductCard (swap card), GenericStatusBadge
+                          # (+ VERDICT_STYLES), VotePanel (logic) + VoteButtons/VoteBreakdown (presentational),
+                          # EvidenceList, EvidenceForm, QuickFacts, FreshnessIndicator, FlagOutdatedButton,
+                          # HealthNotice, AdminTools (admin-only inline "mark reviewed"/archive)
+    category/             # CategoryGrid, CategoryFilter (verdict chips + sort)
+    home/                 # HeroFaceOff, TrendingSection, RecentActivity
     admin/                # SubmissionQueue, EvidenceQueue, FlaggedQueue, ArchivedList
-    ui/                   # Badge, Button, Card, ProductIcon, Skeleton, LegalPage
+    ui/                   # PageHeader, SectionHeading, EmptyState, Pagination, SavingsTag, CategoryIcon/CategoryTile,
+                          # ProductIcon (logo.dev or monogram), Badge, Button, Card, Skeleton, LegalPage, form.ts
   lib/
     db.ts                 # Prisma client factory (Neon or pg adapter) + singleton
     auth.ts               # NextAuth config; pseudonymous usernames via username.ts
@@ -73,6 +75,8 @@ src/
     verdict-labels.ts     # Shared wording for verdicts and vote options
     units.ts              # Package-size parser ("2 x 1.89 L", "100 tablets", "75 sq ft") + unit prices
     format.ts             # formatCAD, en-CA dates
+    price-summary.ts      # describeSavings: one honest sentence about the price difference
+    category-copy.ts      # Neutral one-line descriptions per category
     validation.ts         # cleanText, isSafeHttpUrl, parsePrice, field validators, LIMITS
     comparisons.ts        # effectiveVerdictWhere, toCardData (Decimal → number), card include
     site.ts               # SITE_URL, copy constants, safeCallbackPath (open-redirect guard)
@@ -145,14 +149,14 @@ All providers are registered conditionally on env vars — the app boots cleanly
 
 ## CSS Design System (`src/app/globals.css`)
 
-Custom Tailwind v4 utilities via `@utility`: `glass`, `glass-hover`, `gradient-mesh`, `accent-line`, `gradient-divider`, `animate-fade-up` / `animate-fade-in` (+ `delay-*`).
-Color tokens: `--background: #fafaf8`, `--navy: #0d1b4a`, `--navy-light: #1e3a7a`
+Tokens live in `@theme` (colours, shadows `card`/`lift`/`pop`, radii, `--ease-out-soft`) and `@theme inline` (fonts), so Tailwind generates classes like `bg-paper`, `text-good`, `shadow-card`.
+Custom utilities via `@utility`: `card`, `card-interactive`, `sale-tag`, `bg-hero`, `bg-dots`, `eyebrow`, `text-balance`, `prose-gon`, `animate-bar`, `animate-fade-up` / `animate-fade-in` (+ `delay-*`); legacy `glass`, `glass-hover`, `gradient-mesh`, `accent-line`, `gradient-divider` remain for older markup.
 
 ## Development Commands
 
 ```bash
 npm run dev          # Start dev server (port 3000)
-npm test             # Run Vitest tests (476)
+npm test             # Run Vitest tests (472)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 npx tsc --noEmit     # Type-check (tests included)
@@ -236,6 +240,6 @@ See `.env.example`:
 - Slugs are permanent URLs — archive instead of renaming or deleting
 - Schema changes must be additive (nullable columns / defaults) so `db push` is safe before deploy
 - `tsconfig.json` excludes `prisma/`; shared logic used by scripts lives in `src/lib` with relative imports
-- CSS uses `@utility` directives in globals.css for custom Tailwind v4 classes
-- Navy (`#0d1b4a`) for accent/links; prefer gray-500+ for text on white for contrast
+- CSS uses `@utility` directives in globals.css for custom Tailwind v4 classes; global element styles live in `@layer base` so utilities can override them
+- Use the design tokens (`text-ink`, `text-muted`, `bg-surface`, `text-brand-500`…) instead of raw hex or Tailwind grays; SVG icons (lucide-react) instead of emoji
 - Sign-in links point to `/auth/signin?callbackUrl=<current path>`, never `/api/auth/signin`

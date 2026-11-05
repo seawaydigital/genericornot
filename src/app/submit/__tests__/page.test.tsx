@@ -63,7 +63,7 @@ describe("SubmitPage", () => {
     expect(screen.getAllByLabelText(/product name/i)).toHaveLength(2);
     expect(screen.getAllByLabelText(/package size/i)).toHaveLength(2);
     expect(screen.getAllByLabelText(/price in cad/i)).toHaveLength(2);
-    expect(screen.getByLabelText(/category/i)).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /^category$/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/No Name, President's Choice/)).toBeInTheDocument();
   });
 
@@ -82,15 +82,19 @@ describe("SubmitPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<SubmitPage />);
-    await waitFor(() => expect(screen.getByRole("option", { name: /grocery/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("radio", { name: /grocery/i })).toBeInTheDocument());
 
-    const [genericName, brandName] = screen.getAllByLabelText(/product name/i);
+    // Name brand first, then the store brand — the same order as the comparison page.
+    const [brandName, genericName] = screen.getAllByLabelText(/product name/i);
+    expect(brandName).toHaveAttribute("id", "nameBrandProductName");
+    expect(genericName).toHaveAttribute("id", "genericProductName");
     fireEvent.change(genericName, { target: { value: "Life Brand Ibuprofen" } });
     fireEvent.change(screen.getByLabelText(/^brand/i, { selector: "#genericBrand" }), { target: { value: "Life Brand" } });
     fireEvent.change(screen.getByLabelText(/store/i), { target: { value: "Shoppers Drug Mart" } });
     fireEvent.change(brandName, { target: { value: "Advil" } });
     fireEvent.change(screen.getByLabelText(/^brand/i, { selector: "#nameBrand" }), { target: { value: "Advil" } });
-    fireEvent.change(screen.getByLabelText(/category/i), { target: { value: "cat-1" } });
+    fireEvent.click(screen.getByRole("radio", { name: /grocery/i }));
+    expect(screen.getByRole("radio", { name: /grocery/i })).toBeChecked();
     fireEvent.click(screen.getByRole("button", { name: /submit for review/i }));
 
     await waitFor(() =>
@@ -99,5 +103,19 @@ describe("SubmitPage", () => {
         "/compare/life-brand-ibuprofen-vs-advil"
       )
     );
+  });
+
+  it("previews unit-price savings as the shopper fills in prices and sizes", () => {
+    signedIn();
+    render(<SubmitPage />);
+
+    expect(screen.getByText(/add both prices and package sizes/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/price in cad/i, { selector: "#nameBrandPrice" }), { target: { value: "16.99" } });
+    fireEvent.change(screen.getByLabelText(/package size/i, { selector: "#nameBrandSize" }), { target: { value: "100 tablets" } });
+    fireEvent.change(screen.getByLabelText(/price in cad/i, { selector: "#genericPrice" }), { target: { value: "9.99" } });
+    fireEvent.change(screen.getByLabelText(/package size/i, { selector: "#genericSize" }), { target: { value: "100 tablets" } });
+
+    expect(screen.getByText(/save 41%/i)).toBeInTheDocument();
+    expect(screen.getByText("per unit")).toBeInTheDocument();
   });
 });

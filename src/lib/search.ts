@@ -66,6 +66,7 @@ async function searchWithVector(
     categoryId: string;
     categoryName: string | null;
     categoryIcon: string | null;
+    categorySlug: string | null;
     rank: number;
   }>>(
     `SELECT
@@ -73,7 +74,7 @@ async function searchWithVector(
       pc."genericProductName", pc."genericBrand", pc."genericStore", pc."genericPrice", pc."genericSize",
       pc."nameBrandProductName", pc."nameBrand", pc."nameBrandPrice", pc."nameBrandSize",
       pc.verdict, pc."editorialVerdict", pc."confidenceScore", pc."totalVotes", pc."categoryId",
-      c.name as "categoryName", c.icon as "categoryIcon",
+      c.name as "categoryName", c.icon as "categoryIcon", c.slug as "categorySlug",
       (
         ts_rank(pc."searchVector", to_tsquery('english', $1)) * 2 +
         GREATEST(
@@ -125,7 +126,7 @@ async function searchWithVector(
       genericPrice: r.genericPrice != null ? Number(r.genericPrice) : null,
       nameBrandPrice: r.nameBrandPrice != null ? Number(r.nameBrandPrice) : null,
       category: r.categoryName
-        ? { name: r.categoryName, icon: r.categoryIcon ?? "" }
+        ? { name: r.categoryName, icon: r.categoryIcon ?? "", slug: r.categorySlug ?? undefined }
         : null,
     })),
     total,

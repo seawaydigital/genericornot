@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { CategoryTile } from "@/components/ui/CategoryIcon";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 interface CategoryGridCategory {
   id: string;
@@ -10,39 +13,47 @@ interface CategoryGridCategory {
 
 interface CategoryGridProps {
   categories: CategoryGridCategory[];
+  /** Hide the section heading (e.g. on the categories index page). */
+  hideHeading?: boolean;
 }
 
-export function CategoryGrid({ categories }: CategoryGridProps) {
+export function CategoryGrid({ categories, hideHeading = false }: CategoryGridProps) {
   return (
     <section aria-labelledby="categories-heading">
-      <div className="accent-line">
-        <h2 id="categories-heading" className="text-2xl font-semibold text-gray-900 tracking-tight">
+      {hideHeading ? (
+        <h2 id="categories-heading" className="sr-only">
           Browse by Category
         </h2>
-      </div>
+      ) : (
+        <SectionHeading
+          id="categories-heading"
+          eyebrow="Categories"
+          title="Browse by Category"
+          action={{ href: "/categories", label: "All categories" }}
+        />
+      )}
 
       {categories.length === 0 ? (
-        <p className="mt-8 text-gray-400 text-sm">No categories available yet.</p>
+        <p className="mt-8 text-muted">No categories available yet.</p>
       ) : (
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 ${hideHeading ? "" : "mt-8"}`}>
           {categories.map((category) => (
             <Link
               key={category.id}
               href={`/categories/${category.slug}`}
-              className="glass glass-hover rounded-2xl p-6 flex flex-col items-center gap-4 transition-all duration-200 hover:-translate-y-0.5"
+              className="group card card-interactive relative flex flex-col gap-4 p-5"
             >
-              <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
-                <span className="text-3xl" role="img" aria-label={category.name}>
-                  {category.icon}
-                </span>
+              <CategoryTile slug={category.slug} />
+              <div>
+                <p className="font-semibold leading-snug text-ink">{category.name}</p>
+                <p className="mt-0.5 text-sm tabular-nums text-muted">
+                  {category.comparisonCount} {category.comparisonCount === 1 ? "comparison" : "comparisons"}
+                </p>
               </div>
-              <span className="text-gray-700 font-medium text-sm text-center leading-snug">
-                {category.name}
-              </span>
-              <span className="text-gray-400 text-xs">
-                {category.comparisonCount}{" "}
-                {category.comparisonCount === 1 ? "comparison" : "comparisons"}
-              </span>
+              <ArrowUpRight
+                aria-hidden="true"
+                className="absolute right-4 top-4 h-4 w-4 text-subtle transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink"
+              />
             </Link>
           ))}
         </div>

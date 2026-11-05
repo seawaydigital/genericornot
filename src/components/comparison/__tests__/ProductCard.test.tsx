@@ -59,9 +59,22 @@ describe("ProductCard", () => {
     expect(link).toHaveAttribute("href", "/compare/kirkland-ibuprofen-vs-advil");
   });
 
-  it("renders category icon when provided", () => {
-    render(<ProductCard {...baseProps} category={{ name: "Health & Medicine", icon: "💊" }} />);
-    expect(screen.getByText("💊")).toBeInTheDocument();
+  it("shows the category name with an SVG icon instead of the stored emoji", () => {
+    render(<ProductCard {...baseProps} category={{ name: "Health & Pharmacy", icon: "💊", slug: "health-otc" }} />);
+    expect(screen.getByText("Health & Pharmacy")).toBeInTheDocument();
+    expect(screen.queryByText("💊")).not.toBeInTheDocument();
+  });
+
+  it("shows a rank badge in ranked lists", () => {
+    render(<ProductCard {...baseProps} rank={2} />);
+    expect(screen.getByText("Rank")).toHaveClass("sr-only");
+    expect(screen.getByText("Rank").parentElement).toHaveTextContent("Rank 2");
+  });
+
+  it("marks research verdicts in the card header", () => {
+    render(<ProductCard {...baseProps} verdict="PENDING" totalVotes={0} editorialVerdict="SAME_QUALITY" />);
+    expect(screen.getByText("Research")).toBeInTheDocument();
+    expect(screen.getByText("Generic Worth It")).toBeInTheDocument();
   });
 
   it("does not show price when nameBrandPrice is null", () => {

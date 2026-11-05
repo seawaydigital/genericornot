@@ -1,81 +1,252 @@
 @import "tailwindcss";
 
-/* ── Design tokens ── */
-:root {
-  --background: #fafaf8;
-  --foreground: #1a1a2e;
-  --surface: #ffffff;
-  --surface-hover: #f7f7f5;
-  --border: #e8e8e3;
-  --border-hover: #d0d0cb;
-  --text-primary: #1a1a2e;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --navy: #0d1b4a;
-  --navy-light: #1e3a7a;
-  --green-verdict: #059669;
-  --red-verdict: #dc2626;
-  --amber-verdict: #d97706;
+/*
+ * GenericOrNot design tokens — "shelf tag editorial".
+ *
+ * Every colour used in components should come from here (bg-paper,
+ * text-ink, border-line, bg-good-bg, …). Text colours are chosen to clear
+ * WCAG AA (4.5:1) on both white and paper backgrounds:
+ *   ink    #0b1533  ~17:1   muted  #545a6c  ~6.6:1   subtle #666c7f ~5.1:1
+ */
+@theme {
+  /* Brand */
+  --color-ink: #0b1533;
+  --color-brand: #0d1b4a;
+  --color-brand-700: #13245e;
+  --color-brand-600: #1a3075;
+  --color-brand-500: #284596;
+  --color-brand-200: #c9d2ec;
+  --color-brand-100: #e3e8f6;
+  --color-brand-50: #f1f4fb;
+
+  /* Warm neutrals */
+  --color-paper: #f6f4ee;
+  --color-paper-deep: #eeeadf;
+  --color-surface: #ffffff;
+  --color-surface-2: #fbfaf6;
+  --color-line: #e5e0d4;
+  --color-line-strong: #d3ccbb;
+  --color-muted: #545a6c;
+  --color-subtle: #666c7f;
+
+  /* Sale-tag yellow (savings) */
+  --color-tag: #ffd23f;
+  --color-tag-deep: #f2b705;
+
+  /* Verdicts — text / background / border */
+  --color-good: #04704f;
+  --color-good-bg: #e6f5ee;
+  --color-good-line: #a3d9c1;
+  --color-close: #a74c05;
+  --color-close-bg: #fdf2df;
+  --color-close-line: #f1c98c;
+  --color-bad: #b3123a;
+  --color-bad-bg: #fdebee;
+  --color-bad-line: #f3b1bf;
+  --color-neutral: #46536a;
+  --color-neutral-bg: #edf0f4;
+  --color-neutral-line: #cfd6e0;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(11 21 51 / 0.05), 0 2px 10px rgb(11 21 51 / 0.04);
+  --shadow-lift: 0 2px 6px rgb(11 21 51 / 0.06), 0 16px 36px rgb(11 21 51 / 0.1);
+  --shadow-pop: 0 24px 60px -12px rgb(11 21 51 / 0.28);
+
+  /* Radii */
+  --radius-card: 1.25rem;
+  --radius-panel: 1.75rem;
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
-  --color-border-subtle: var(--border);
-  --color-border-hover: var(--border-hover);
-  --color-navy: var(--navy);
-  --color-navy-light: var(--navy-light);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-instrument), ui-serif, Georgia, "Times New Roman", serif;
 }
 
-/* ── Base ── */
-html {
-  scroll-behavior: smooth;
-}
+/* ── Base ──
+   Inside @layer base so utilities such as focus:outline-none (paired with a
+   visible ring) can override these defaults. */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-feature-settings: "ss01" 1;
+  }
 
-::selection {
-  background: rgba(13, 27, 74, 0.15);
-  color: var(--foreground);
-}
+  ::selection {
+    background: rgb(255 210 63 / 0.55);
+    color: var(--color-ink);
+  }
 
-/* ── Card utility (light theme) ── */
-@utility glass {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
+  /* One consistent, visible focus ring for keyboard users. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
 
-@utility glass-hover {
-  &:hover {
-    background: var(--surface-hover);
-    border-color: var(--border-hover);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  button,
+  [role="button"],
+  a,
+  summary,
+  select {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled),
+  summary,
+  select {
+    cursor: pointer;
   }
 }
 
-/* ── Gradient mesh (light hero background) ── */
-@utility gradient-mesh {
-  background:
-    radial-gradient(ellipse 600px 400px at 20% 0%, rgba(13, 27, 74, 0.03) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 300px at 80% 10%, rgba(13, 27, 74, 0.02) 0%, transparent 70%);
+/* ── Surfaces ── */
+@utility card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
-/* ── Section accent line ── */
+@utility card-interactive {
+  transition:
+    transform 200ms var(--ease-out-soft),
+    box-shadow 200ms var(--ease-out-soft),
+    border-color 200ms var(--ease-out-soft);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--color-line-strong);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.995);
+  }
+}
+
+/* Kept for existing markup: same look as `card`. */
+@utility glass {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-card);
+}
+
+@utility glass-hover {
+  transition:
+    box-shadow 200ms var(--ease-out-soft),
+    border-color 200ms var(--ease-out-soft);
+
+  &:hover {
+    border-color: var(--color-line-strong);
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+/* ── Sale tag: the savings badge, shaped like a shelf price tag ── */
+@utility sale-tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-tag);
+  color: var(--color-ink);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%);
+  padding-left: 1.15em;
+  border-radius: 0 0.35em 0.35em 0;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0.55em;
+    top: 50%;
+    width: 0.32em;
+    height: 0.32em;
+    margin-top: -0.16em;
+    border-radius: 9999px;
+    background: var(--color-paper);
+  }
+}
+
+/* ── Backgrounds ── */
+@utility bg-dots {
+  background-image: radial-gradient(rgb(11 21 51 / 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@utility bg-hero {
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, rgb(255 210 63 / 0.22), transparent 60%),
+    radial-gradient(50rem 28rem at 0% 0%, rgb(40 69 150 / 0.1), transparent 60%),
+    var(--color-paper);
+}
+
+/* Legacy helpers still used by some pages */
+@utility gradient-mesh {
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 0%, rgb(13 27 74 / 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 300px at 80% 10%, rgb(255 210 63 / 0.12) 0%, transparent 70%);
+}
+
 @utility accent-line {
   &::before {
     content: "";
     display: block;
-    width: 40px;
-    height: 2px;
-    background: var(--navy);
-    margin-bottom: 1rem;
-    border-radius: 1px;
+    width: 2.5rem;
+    height: 3px;
+    background: var(--color-tag);
+    margin-bottom: 0.875rem;
+    border-radius: 2px;
+  }
+}
+
+@utility gradient-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-line-strong), transparent);
+}
+
+/* ── Type helpers ── */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+/* Long-form copy on legal/about pages */
+@utility prose-gon {
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+
+  & a {
+    color: var(--color-brand-500);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  & a:hover {
+    color: var(--color-brand);
+  }
+
+  & strong {
+    color: var(--color-ink);
+    font-weight: 600;
   }
 }
 
@@ -83,7 +254,7 @@ body {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -92,33 +263,69 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 @utility animate-fade-up {
-  animation: fade-up 0.6s ease-out both;
+  animation: fade-up 0.55s var(--ease-out-soft) both;
 }
 
 @utility animate-fade-in {
-  animation: fade-in 0.5s ease-out both;
+  animation: fade-in 0.4s ease-out both;
 }
 
-@utility delay-100 { animation-delay: 100ms; }
-@utility delay-200 { animation-delay: 200ms; }
-@utility delay-300 { animation-delay: 300ms; }
-@utility delay-400 { animation-delay: 400ms; }
-@utility delay-500 { animation-delay: 500ms; }
-
-/* ── Subtle gradient divider ── */
-@utility gradient-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
+@utility animate-bar {
+  transform-origin: left center;
+  animation: bar-grow 0.6s var(--ease-out-soft) both;
 }
 
-/* ── Scrollbar styling ── */
+@utility delay-100 {
+  animation-delay: 80ms;
+}
+@utility delay-200 {
+  animation-delay: 160ms;
+}
+@utility delay-300 {
+  animation-delay: 240ms;
+}
+@utility delay-400 {
+  animation-delay: 320ms;
+}
+@utility delay-500 {
+  animation-delay: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -126,10 +333,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
+  background: rgb(11 21 51 / 0.14);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgb(11 21 51 / 0.24);
 }

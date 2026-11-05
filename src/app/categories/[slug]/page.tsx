@@ -6,7 +6,13 @@ import { ProductCard } from "@/components/comparison/ProductCard";
 import { comparisonCardInclude, effectiveVerdictWhere, isVerdictFilter, toCardData } from "@/lib/comparisons";
 import { getCategoryMetadata } from "@/lib/seo";
 import { computeSavings } from "@/lib/verdict";
+import { categoryBlurb } from "@/lib/category-copy";
 import Link from "next/link";
+import { SearchX } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { CategoryTile } from "@/components/ui/CategoryIcon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 
 export const revalidate = 300;
 
@@ -110,83 +116,73 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     return qs ? `?${qs}` : `?`;
   };
 
+  const blurb = categoryBlurb(category.slug);
+
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center">
-              <span className="text-2xl" role="img" aria-label={category.name}>
-                {category.icon}
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{category.name}</h1>
-          </div>
-          <p className="text-gray-500 text-sm mt-1">
-            {category.comparisonCount} {category.comparisonCount === 1 ? "comparison" : "comparisons"}
+      <PageHeader
+        icon={<CategoryTile slug={category.slug} size="lg" className="shadow-card ring-1 ring-black/5" />}
+        eyebrow={
+          <Link href="/categories" className="transition-colors hover:text-ink">
+            Categories
+          </Link>
+        }
+        title={category.name}
+        description={
+          <p>
+            {blurb ? `${blurb} ` : ""}
+            <span className="font-semibold tabular-nums text-ink">{category.comparisonCount}</span>{" "}
+            {category.comparisonCount === 1 ? "comparison" : "comparisons"} so far.
           </p>
-        </div>
+        }
+      >
+        <CategoryFilter currentVerdict={verdict ?? ""} currentSort={sort} />
+      </PageHeader>
 
-        {/* Filters */}
-        <div className="mb-8">
-          <CategoryFilter currentVerdict={verdict ?? ""} currentSort={sort} />
-        </div>
-
-        {/* Price disclaimer */}
-        <p className="text-gray-500 text-xs mb-6">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10 lg:px-8">
+        <p className="mb-6 text-sm text-muted">
           Approximate regular prices in Canadian dollars; they vary by province, store and sales. Savings compare unit
           prices when package sizes are known.
         </p>
 
-        {/* Comparisons grid */}
         {comparisons.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">No comparisons found.</p>
-            {verdict && (
-              <p className="text-gray-500 text-sm mt-2">
-                Try removing the verdict filter or{" "}
-                <Link href={`/categories/${slug}`} className="text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors">
-                  view all comparisons
-                </Link>{" "}
-                in this category.
-              </p>
-            )}
-          </div>
+          <EmptyState
+            Icon={SearchX}
+            title="No comparisons here yet"
+            actions={
+              <>
+                {verdict && (
+                  <Link
+                    href={`/categories/${slug}`}
+                    className="inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-5 text-sm font-semibold text-ink shadow-sm hover:border-line-strong"
+                  >
+                    Clear the filter
+                  </Link>
+                )}
+                <Link
+                  href="/submit"
+                  className="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-600"
+                >
+                  Add a comparison
+                </Link>
+              </>
+            }
+          >
+            {verdict
+              ? "Nothing in this aisle has that verdict right now. Try another filter, or view everything in this category."
+              : "Know a store brand that belongs here? Add it and let other shoppers weigh in."}
+          </EmptyState>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {comparisons.map((comparison) => (
-              <ProductCard key={comparison.id} {...comparison} />
+              <li key={comparison.id}>
+                <ProductCard {...comparison} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <nav className="mt-12 flex items-center justify-center gap-2" aria-label="Pagination">
-            {page > 1 && (
-              <Link
-                href={buildPageUrl(page - 1)}
-                className="px-4 py-2 glass rounded-xl text-gray-600 text-sm hover:text-gray-900 hover:border-gray-300 transition-all duration-200"
-              >
-                &larr; Previous
-              </Link>
-            )}
-
-            <span className="text-gray-500 text-sm px-2">
-              Page {page} of {totalPages}
-            </span>
-
-            {page < totalPages && (
-              <Link
-                href={buildPageUrl(page + 1)}
-                className="px-4 py-2 glass rounded-xl text-gray-600 text-sm hover:text-gray-900 hover:border-gray-300 transition-all duration-200"
-              >
-                Next &rarr;
-              </Link>
-            )}
-          </nav>
-        )}
+        <Pagination page={page} totalPages={totalPages} hrefFor={buildPageUrl} />
       </div>
     </div>
   );

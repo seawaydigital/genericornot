@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { ProductCard } from "@/components/comparison/ProductCard";
 import { comparisonCardInclude, toCardData } from "@/lib/comparisons";
+import Link from "next/link";
+import { Plus, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export const revalidate = 120;
 
@@ -30,26 +34,34 @@ export default async function NewPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Recently Added
-          </h1>
-          <p className="mt-2 text-gray-600 text-sm">
-            The newest comparisons added by the community.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Just added"
+        title="New comparisons"
+        description={<p>The latest store-brand matchups. Most are waiting for votes — yours helps set the verdict.</p>}
+        actions={
+          <Link
+            href="/submit"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-600"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Add a comparison
+          </Link>
+        }
+      />
 
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-12 lg:px-8">
         {comparisons.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
-            <p className="text-gray-500">No comparisons yet. Be the first to submit one!</p>
-          </div>
+          <EmptyState Icon={Sparkles} title="Nothing new yet">
+            Be the first to add a store-brand comparison.
+          </EmptyState>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {comparisons.map((comparison) => (
-              <ProductCard key={comparison.id} {...comparison} />
+              <li key={comparison.id}>
+                <ProductCard {...comparison} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </div>

@@ -130,8 +130,9 @@ export function VotePanel({ comparisonId, slug, genericBrand, nameBrand, initial
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-gray-900 font-semibold text-base leading-snug">Is {genericBrand} worth it?</h2>
-        <p className="text-gray-500 text-xs mt-1 leading-relaxed">
+        <p className="eyebrow">Your verdict</p>
+        <h2 className="mt-1.5 font-display text-[1.75rem] leading-[1.1] tracking-tight text-ink">Is {genericBrand} worth it?</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">
           Compared with {nameBrand}. One vote per person — you can change it any time.
         </p>
       </div>
@@ -139,11 +140,11 @@ export function VotePanel({ comparisonId, slug, genericBrand, nameBrand, initial
       <VoteButtons currentVote={currentVote} onVote={handleVote} disabled={isLoading || status === "loading"} />
 
       {status === "unauthenticated" && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-center text-sm text-muted">
           Pick an option and we&apos;ll ask you to{" "}
           <Link
             href={`/auth/signin?callbackUrl=${encodeURIComponent(`/compare/${slug}`)}`}
-            className="text-[#0d1b4a] font-medium hover:underline"
+            className="font-semibold text-brand-500 underline-offset-2 hover:underline"
           >
             sign in
           </Link>{" "}
@@ -152,29 +153,30 @@ export function VotePanel({ comparisonId, slug, genericBrand, nameBrand, initial
       )}
 
       {error && (
-        <p className="text-red-600 text-xs text-center" role="alert">
+        <p className="rounded-xl bg-bad-bg px-3 py-2 text-center text-sm font-medium text-bad" role="alert">
           {error}
         </p>
       )}
       {message && !error && (
-        <p className="text-emerald-700 text-xs text-center" role="status">
+        <p className="rounded-xl bg-good-bg px-3 py-2 text-center text-sm font-medium text-good" role="status">
           {message}
         </p>
       )}
 
-      <VoteBreakdown
-        sameQuality={counts.sameQuality}
-        closeEnough={counts.closeEnough}
-        notWorthIt={counts.notWorthIt}
-        totalVotes={total}
-      />
-
-      <p className="text-xs text-gray-500 text-center">
-        {total} community vote{total === 1 ? "" : "s"}
-        {votesNeeded > 0
-          ? ` · ${votesNeeded} more needed for a community verdict`
-          : ""}
-      </p>
+      <div className="rounded-2xl border border-line bg-surface-2 p-4">
+        <VoteBreakdown
+          sameQuality={counts.sameQuality}
+          closeEnough={counts.closeEnough}
+          notWorthIt={counts.notWorthIt}
+          totalVotes={total}
+        />
+        <p className="mt-4 border-t border-line pt-3 text-center text-xs text-muted">
+          {total} community vote{total === 1 ? "" : "s"}
+          {votesNeeded > 0
+            ? ` · ${votesNeeded} more needed for a community verdict`
+            : ""}
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,21 +1,25 @@
 import { ReactNode, ButtonHTMLAttributes } from "react";
+import { LoaderCircle } from "lucide-react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-to-b from-[#0d1b4a] to-[#162d6b] text-white shadow-sm hover:shadow-md hover:brightness-110 active:brightness-95",
+    "bg-brand text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_1px_2px_rgb(11_21_51/0.2)] hover:bg-brand-600 active:bg-brand-700",
   secondary:
-    "glass text-gray-700 hover:text-gray-900 hover:border-gray-300",
+    "glass bg-surface text-ink hover:border-line-strong hover:bg-surface-2 active:bg-paper",
   ghost:
-    "text-gray-500 hover:text-gray-700 hover:bg-gray-100",
+    "text-muted hover:text-ink hover:bg-gray-100 active:bg-gray-200",
+  danger:
+    "bg-surface text-bad ring-1 ring-inset ring-bad-line hover:bg-bad-bg active:bg-bad-bg",
 };
 
+// md and lg meet the 44px minimum touch target.
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-sm",
-  lg: "px-6 py-3 text-base",
+  sm: "min-h-9 px-3 py-1.5 text-sm gap-1.5",
+  md: "min-h-11 px-4 py-2 text-sm gap-2",
+  lg: "min-h-12 px-6 py-3 text-base gap-2",
 };
 
 interface ButtonProps {
@@ -44,31 +48,12 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/20 focus:ring-offset-1 focus:ring-offset-[#fafaf8] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      aria-busy={loading || undefined}
+      className={`inline-flex items-center justify-center rounded-xl font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
     >
       {loading ? (
         <>
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
+          <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />
           Loading...
         </>
       ) : (

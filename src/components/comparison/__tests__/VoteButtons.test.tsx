@@ -14,7 +14,7 @@ describe("VoteButtons", () => {
     render(<VoteButtons currentVote="SAME_QUALITY" onVote={vi.fn()} />);
     const same = screen.getByRole("button", { name: /same quality/i });
     expect(same).toHaveAttribute("aria-pressed", "true");
-    expect(same.className).toContain("emerald");
+    expect(same.className).toContain("bg-good-bg");
     expect(screen.getByRole("button", { name: /close enough/i })).toHaveAttribute("aria-pressed", "false");
   });
 

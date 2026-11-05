@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight, Bug, ChevronDown, Mail } from "lucide-react";
 import { CONTACT_EMAIL } from "@/lib/site";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const metadata: Metadata = {
   title: "Contact — GenericOrNot",
@@ -38,45 +40,72 @@ const FAQ = [
 export default function ContactPage() {
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-4 md:px-6 py-12 space-y-12">
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Contact</h1>
-          <p className="mt-2 text-gray-500 text-sm">Have a question, suggestion, or found a bug? We&apos;d love to hear from you.</p>
-        </header>
+      <PageHeader
+        eyebrow="Contact"
+        title="Get in touch"
+        description={<p>Have a question, suggestion, or found a bug? We&apos;d love to hear from you.</p>}
+      />
 
+      <div className="mx-auto max-w-4xl space-y-14 px-4 py-10 sm:px-6 md:py-14 lg:px-8">
         <div className="grid gap-4 sm:grid-cols-2">
-          <a href={`mailto:${CONTACT_EMAIL}`} className="glass glass-hover rounded-2xl p-6 transition-all duration-200 block">
-            <div className="text-2xl mb-3 opacity-40" aria-hidden="true">&#9993;</div>
-            <h2 className="text-gray-900 font-semibold text-sm">Email</h2>
-            <p className="text-[#0d1b4a] text-sm mt-1">{CONTACT_EMAIL}</p>
-            <p className="text-gray-500 text-xs mt-2">General questions, corrections, privacy requests</p>
+          <a href={`mailto:${CONTACT_EMAIL}`} className="group card card-interactive block p-6">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand text-tag">
+              <Mail aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <h2 className="mt-4 font-semibold text-ink">Email</h2>
+            <p className="mt-1 break-all font-medium text-brand-500 group-hover:underline">{CONTACT_EMAIL}</p>
+            <p className="mt-2 text-sm text-muted">General questions, corrections, privacy requests</p>
           </a>
-          <a href="https://github.com/seawaydigital/genericornot/issues" target="_blank" rel="noopener noreferrer" className="glass glass-hover rounded-2xl p-6 transition-all duration-200 block">
-            <div className="text-2xl mb-3 opacity-40" aria-hidden="true">&#128736;</div>
-            <h2 className="text-gray-900 font-semibold text-sm">GitHub Issues</h2>
-            <p className="text-[#0d1b4a] text-sm mt-1">Report bugs or request features</p>
-            <p className="text-gray-500 text-xs mt-2">For technical issues — please don&apos;t post personal information</p>
+          <a
+            href="https://github.com/seawaydigital/genericornot/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group card card-interactive relative block p-6"
+          >
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-paper-deep text-ink">
+              <Bug aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <ArrowUpRight aria-hidden="true" className="absolute right-5 top-5 h-4 w-4 text-subtle" />
+            <h2 className="mt-4 font-semibold text-ink">
+              GitHub Issues <span className="sr-only">(opens in a new tab)</span>
+            </h2>
+            <p className="mt-1 font-medium text-brand-500 group-hover:underline">Report bugs or request features</p>
+            <p className="mt-2 text-sm text-muted">For technical issues — please don&apos;t post personal information</p>
           </a>
         </div>
 
-        <section>
-          <div className="accent-line"><h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Frequently Asked Questions</h2></div>
-          <div className="mt-8 space-y-4">
+        <section aria-labelledby="faq-heading">
+          <p className="eyebrow">Answers</p>
+          <h2 id="faq-heading" className="mt-1.5 font-display text-4xl leading-none tracking-tight text-ink">
+            Frequently Asked Questions
+          </h2>
+          <div className="card mt-6 divide-y divide-line overflow-hidden">
             {FAQ.map((item) => (
-              <div key={item.q} className="glass rounded-2xl p-5">
-                <h3 className="text-gray-900 font-medium text-sm">{item.q}</h3>
-                <p className="text-gray-600 text-sm mt-2 leading-relaxed">{item.a}</p>
-              </div>
+              <details key={item.q} className="group">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold text-ink transition-colors hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+                  <span className="text-[15px]">{item.q}</span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="h-4 w-4 shrink-0 text-subtle transition-transform duration-200 group-open:rotate-180"
+                  />
+                </summary>
+                <p className="px-5 pb-5 text-[15px] leading-relaxed text-muted">{item.a}</p>
+              </details>
             ))}
           </div>
         </section>
 
-        <div className="gradient-divider" />
-        <div className="flex flex-wrap gap-6 text-sm">
-          <Link href="/about" className="text-gray-500 hover:text-gray-800 transition-colors">About</Link>
-          <Link href="/privacy" className="text-gray-500 hover:text-gray-800 transition-colors">Privacy Policy</Link>
-          <Link href="/terms" className="text-gray-500 hover:text-gray-800 transition-colors">Terms of Service</Link>
-        </div>
+        <nav aria-label="More about GenericOrNot" className="flex flex-wrap gap-x-6 border-t border-line pt-4 text-sm">
+          <Link href="/about" className="inline-flex min-h-11 items-center font-medium text-muted transition-colors hover:text-ink">
+            About
+          </Link>
+          <Link href="/privacy" className="inline-flex min-h-11 items-center font-medium text-muted transition-colors hover:text-ink">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="inline-flex min-h-11 items-center font-medium text-muted transition-colors hover:text-ink">
+            Terms of Service
+          </Link>
+        </nav>
       </div>
     </div>
   );

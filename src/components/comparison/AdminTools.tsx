@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { Archive, BadgeCheck, ShieldCheck } from "lucide-react";
 
 /**
  * Inline moderation for admins browsing the live site. Renders nothing for
@@ -41,15 +42,34 @@ export function AdminTools({ comparisonId }: { comparisonId: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-2 text-xs text-gray-600">
-      <span className="font-semibold uppercase tracking-wider text-[10px] text-gray-500">Admin</span>
-      <button type="button" disabled={busy} onClick={() => act("markReviewed")} className="text-[#0d1b4a] hover:underline disabled:opacity-50">
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-line-strong bg-surface-2 px-4 py-3 text-sm text-muted">
+      <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-subtle">
+        <ShieldCheck aria-hidden="true" className="h-4 w-4" />
+        Admin
+      </span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("markReviewed")}
+        className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 font-semibold text-brand-500 transition-colors hover:bg-brand-50 disabled:opacity-50"
+      >
+        <BadgeCheck aria-hidden="true" className="h-4 w-4" />
         Mark reviewed (prices &amp; facts checked)
       </button>
-      <button type="button" disabled={busy} onClick={() => act("archive")} className="text-red-700 hover:underline disabled:opacity-50">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => act("archive")}
+        className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 font-semibold text-bad transition-colors hover:bg-bad-bg disabled:opacity-50"
+      >
+        <Archive aria-hidden="true" className="h-4 w-4" />
         Archive
       </button>
-      {message && <span role="status">{message}</span>}
+      {message && (
+        <span role="status" className="text-sm font-medium text-ink">
+          {message}
+        </span>
+      )}
     </div>
   );
 }

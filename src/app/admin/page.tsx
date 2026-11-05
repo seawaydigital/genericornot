@@ -8,6 +8,7 @@ import { SubmissionQueue } from "@/components/admin/SubmissionQueue";
 import { EvidenceQueue } from "@/components/admin/EvidenceQueue";
 import { FlaggedQueue } from "@/components/admin/FlaggedQueue";
 import { ArchivedList } from "@/components/admin/ArchivedList";
+import { Archive, Flag, Inbox, LayoutDashboard, MessageSquareText, type LucideIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -105,50 +106,80 @@ export default async function AdminPage() {
     reasons: c.flags.map((f) => f.reason).filter((r): r is string => !!r),
   }));
 
+  const stats: { label: string; value: number; Icon: LucideIcon; href: string }[] = [
+    { label: "Submissions", value: comparisons.length, Icon: Inbox, href: "#submissions" },
+    { label: "Evidence", value: pendingEvidence.length, Icon: MessageSquareText, href: "#evidence" },
+    { label: "Reports", value: flaggedComparisons.length, Icon: Flag, href: "#reports" },
+    { label: "Archived", value: archivedCount, Icon: Archive, href: "#archived" },
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl px-4 md:px-6 py-10 space-y-12">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Admin Dashboard</h1>
-        <p className="text-gray-500 text-sm">
-          {comparisons.length} comparison{comparisons.length === 1 ? "" : "s"}, {pendingEvidence.length} evidence
-          {pendingEvidence.length === 1 ? " entry" : " entries"} and {flaggedComparisons.length} report
-          {flaggedComparisons.length === 1 ? "" : "s"} waiting. {archivedCount} archived.
-        </p>
+    <div className="min-h-screen">
+      <header className="border-b border-line bg-hero">
+        <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+          <p className="eyebrow inline-flex items-center gap-1.5">
+            <LayoutDashboard aria-hidden="true" className="h-3.5 w-3.5" />
+            Moderation
+          </p>
+          <h1 className="mt-2 font-display text-5xl leading-none tracking-tight text-ink">Admin Dashboard</h1>
+          <p className="mt-3 text-sm text-muted">
+            {comparisons.length} comparison{comparisons.length === 1 ? "" : "s"}, {pendingEvidence.length} evidence
+            {pendingEvidence.length === 1 ? " entry" : " entries"} and {flaggedComparisons.length} report
+            {flaggedComparisons.length === 1 ? "" : "s"} waiting. {archivedCount} archived.
+          </p>
+          <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {stats.map(({ label, value, Icon, href }) => (
+              <li key={label}>
+                <a href={href} className="card card-interactive block px-4 py-3">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted">
+                    <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                    {label}
+                  </span>
+                  <span className={`mt-1 block font-display text-3xl leading-none tabular-nums ${value > 0 && label !== "Archived" ? "text-ink" : "text-subtle"}`}>
+                    {value}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-4xl space-y-12 px-4 py-10 sm:px-6">
+        <section id="submissions" className="scroll-mt-24">
+          <h2 className="mb-4 text-xl font-semibold text-ink">Pending Submissions</h2>
+          <SubmissionQueue initialComparisons={comparisons} />
+        </section>
+
+        <section id="evidence" className="scroll-mt-24">
+          <h2 className="mb-1 text-xl font-semibold text-ink">Evidence Awaiting Review</h2>
+          <p className="mb-4 text-sm text-muted">
+            Approve only factual, non-defamatory content. Use &ldquo;Confirmed&rdquo; only when a regulator, product
+            label or official source backs the claim.
+          </p>
+          <EvidenceQueue initialEvidence={pendingEvidence} />
+        </section>
+
+        <section id="reports" className="scroll-mt-24">
+          <h2 className="mb-4 text-xl font-semibold text-ink">Reported as Outdated</h2>
+          <FlaggedQueue initialFlagged={flaggedComparisons} />
+        </section>
+
+        <section id="archived" className="scroll-mt-24">
+          <h2 className="mb-1 text-xl font-semibold text-ink">Archived</h2>
+          <p className="mb-4 text-sm text-muted">
+            Hidden from the site but kept with their votes and evidence. Restoring makes a comparison public again.
+          </p>
+          <ArchivedList
+            initialArchived={archived.map((c) => ({
+              id: c.id,
+              genericProductName: c.genericProductName,
+              nameBrandProductName: c.nameBrandProductName,
+              reason: c.rejectionReason,
+            }))}
+          />
+        </section>
       </div>
-
-      <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Submissions</h2>
-        <SubmissionQueue initialComparisons={comparisons} />
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Evidence Awaiting Review</h2>
-        <p className="text-gray-500 text-xs mb-4">
-          Approve only factual, non-defamatory content. Use &ldquo;Confirmed&rdquo; only when a regulator, product
-          label or official source backs the claim.
-        </p>
-        <EvidenceQueue initialEvidence={pendingEvidence} />
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Reported as Outdated</h2>
-        <FlaggedQueue initialFlagged={flaggedComparisons} />
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Archived</h2>
-        <p className="text-gray-500 text-xs mb-4">
-          Hidden from the site but kept with their votes and evidence. Restoring makes a comparison public again.
-        </p>
-        <ArchivedList
-          initialArchived={archived.map((c) => ({
-            id: c.id,
-            genericProductName: c.genericProductName,
-            nameBrandProductName: c.nameBrandProductName,
-            reason: c.rejectionReason,
-          }))}
-        />
-      </section>
     </div>
   );
 }

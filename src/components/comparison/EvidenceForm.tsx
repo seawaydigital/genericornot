@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { LIMITS } from "@/lib/validation";
+import { inputClass, labelClass } from "@/components/ui/form";
+import { MessageSquarePlus } from "lucide-react";
 
 type EvidenceType =
   | "MANUFACTURER_INFO"
@@ -27,8 +29,7 @@ interface EvidenceFormProps {
   onEvidenceAdded?: () => void;
 }
 
-const inputClasses =
-  "w-full bg-white border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#0d1b4a]/30 focus:ring-2 focus:ring-[#0d1b4a]/10 transition-all duration-200";
+const inputClasses = inputClass;
 
 export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFormProps) {
   const { data: session, status } = useSession();
@@ -46,15 +47,20 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
       ? `/auth/signin?callbackUrl=${encodeURIComponent(`/compare/${slug}`)}`
       : "/auth/signin";
     return (
-      <div className="glass rounded-2xl p-6">
-        <h2 className="text-gray-900 font-semibold text-base mb-3">Add Evidence</h2>
-        <p className="text-gray-500 text-sm">
-          <Link href={signInHref} className="text-[#0d1b4a] hover:underline font-medium">
-            Sign in to contribute evidence
-          </Link>{" "}
-          on this comparison.
-        </p>
-      </div>
+      <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:p-8">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand">
+          <MessageSquarePlus aria-hidden="true" className="h-5 w-5" />
+        </span>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-ink">Add Evidence</h2>
+          <p className="mt-0.5 text-sm text-muted">
+            <Link href={signInHref} className="font-semibold text-brand-500 hover:underline">
+              Sign in to contribute evidence
+            </Link>{" "}
+            on this comparison.
+          </p>
+        </div>
+      </section>
     );
   }
 
@@ -91,16 +97,16 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
   }
 
   return (
-    <div className="glass rounded-2xl p-6">
-      <h2 className="text-gray-900 font-semibold text-base mb-1">Add Evidence</h2>
-      <p className="text-gray-500 text-xs mb-4 leading-relaxed">
+    <section className="card p-6 sm:p-8">
+      <h2 className="text-lg font-semibold text-ink">Add Evidence</h2>
+      <p className="mb-6 mt-1 text-sm leading-relaxed text-muted">
         Share what you know: ingredient labels, who makes it, or how it held up for you. Stick to facts and your own
         experience — submissions are reviewed before they appear.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label htmlFor="evidence-type" className="block text-gray-600 text-sm font-medium mb-1.5">
+          <label htmlFor="evidence-type" className={labelClass}>
             Type
           </label>
           <select id="evidence-type" value={type} onChange={(e) => setType(e.target.value as EvidenceType)} className={inputClasses}>
@@ -111,7 +117,7 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
         </div>
 
         <div>
-          <label htmlFor="evidence-title" className="block text-gray-600 text-sm font-medium mb-1.5">Title</label>
+          <label htmlFor="evidence-title" className={labelClass}>Title</label>
           <input
             id="evidence-title"
             type="text"
@@ -124,8 +130,8 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
           />
         </div>
 
-        <div>
-          <label htmlFor="evidence-content" className="block text-gray-600 text-sm font-medium mb-1.5">Content</label>
+        <div className="sm:col-span-2">
+          <label htmlFor="evidence-content" className={labelClass}>Content</label>
           <textarea
             id="evidence-content"
             required
@@ -138,9 +144,9 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
           />
         </div>
 
-        <div>
-          <label htmlFor="evidence-url" className="block text-gray-600 text-sm font-medium mb-1.5">
-            URL <span className="text-gray-400 font-normal">{type === "VIDEO_LINK" ? "(required)" : "(optional)"}</span>
+        <div className="sm:col-span-2">
+          <label htmlFor="evidence-url" className={labelClass}>
+            URL <span className="font-normal text-subtle">{type === "VIDEO_LINK" ? "(required)" : "(optional)"}</span>
           </label>
           <input
             id="evidence-url"
@@ -154,17 +160,19 @@ export function EvidenceForm({ comparisonId, slug, onEvidenceAdded }: EvidenceFo
           />
         </div>
 
-        {successMessage && <p className="text-emerald-700 text-sm font-medium" role="status">{successMessage}</p>}
-        {errorMessage && <p className="text-red-600 text-sm" role="alert">{errorMessage}</p>}
+        {successMessage && <p className="sm:col-span-2 rounded-xl bg-good-bg px-3 py-2 text-sm font-medium text-good" role="status">{successMessage}</p>}
+        {errorMessage && <p className="sm:col-span-2 rounded-xl bg-bad-bg px-3 py-2 text-sm font-medium text-bad" role="alert">{errorMessage}</p>}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-gradient-to-b from-[#0d1b4a] to-[#162d6b] disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition-all duration-200 hover:shadow-md hover:brightness-110"
-        >
-          {isSubmitting ? "Submitting..." : "Submit Evidence"}
-        </button>
+        <div className="sm:col-span-2 flex justify-end">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {isSubmitting ? "Submitting..." : "Submit Evidence"}
+          </button>
+        </div>
       </form>
-    </div>
+    </section>
   );
 }

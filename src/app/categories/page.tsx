@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { CategoryGrid } from "@/components/category/CategoryGrid";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export const revalidate = 300;
 
@@ -33,17 +34,19 @@ export default async function CategoriesPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Browse Categories
-          </h1>
-          <p className="mt-2 text-gray-500 text-sm">
-            {totalComparisons} comparisons across {categories.length} categories
+      <PageHeader
+        eyebrow="Categories"
+        title="Browse by category"
+        description={
+          <p>
+            <span className="font-semibold tabular-nums text-ink">{totalComparisons}</span> store-brand vs name-brand
+            comparisons across <span className="font-semibold tabular-nums text-ink">{categories.length}</span> aisles —
+            from pantry staples to pharmacy shelves.
           </p>
-        </div>
-
-        <CategoryGrid categories={categories} />
+        }
+      />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-14 lg:px-8">
+        <CategoryGrid categories={categories} hideHeading />
       </div>
     </div>
   );

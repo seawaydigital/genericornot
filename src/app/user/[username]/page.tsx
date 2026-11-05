@@ -4,8 +4,10 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { authOptions } from "@/lib/auth";
-import { VerdictBadge } from "@/components/comparison/VerdictBadge";
+import { CalendarDays, FileText, Plus, Scale, Vote } from "lucide-react";
+import { GenericStatusBadge } from "@/components/comparison/GenericStatusBadge";
 import { Badge } from "@/components/ui/Badge";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { getDisplayVerdict } from "@/lib/verdict";
 import { formatDate, formatMonthYear } from "@/lib/format";
 
@@ -27,7 +29,7 @@ async function getUser(username: string) {
           select: {
             id: true, slug: true, genericProductName: true, nameBrandProductName: true,
             verdict: true, editorialVerdict: true, totalVotes: true, status: true, createdAt: true,
-            category: { select: { name: true, icon: true } },
+            category: { select: { name: true, icon: true, slug: true } },
           },
         },
         evidence: {
@@ -69,87 +71,165 @@ export default async function UserProfilePage({ params }: PageProps) {
     ? user.evidence
     : user.evidence.filter((e) => e.status === "APPROVED" && e.comparison.status === "APPROVED");
 
+  const stats = [
+    { label: "Comparisons", value: comparisons.length, Icon: Scale },
+    { label: "Evidence", value: evidence.length, Icon: FileText },
+    { label: "Votes", value: user._count.votes, Icon: Vote },
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl px-4 md:px-6 py-12 space-y-10">
-      <section className="glass rounded-2xl p-6 flex flex-wrap items-center gap-5">
-        <div className="rounded-full bg-[#0d1b4a]/10 flex items-center justify-center text-2xl font-bold text-[#0d1b4a] shrink-0 w-[72px] h-[72px]" aria-hidden="true">
-          {user.username.charAt(0).toUpperCase()}
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900 break-all">{user.username}</h1>
-          <p className="text-gray-500 text-xs mt-1">Member since {formatMonthYear(user.createdAt)}</p>
-          {isOwner && (
-            <p className="text-gray-500 text-xs mt-1">
-              This is your public profile. Only your nickname and approved contributions are visible to others.
-            </p>
-          )}
-        </div>
-        <div className="ml-auto flex gap-6 text-center">
-          <div><p className="text-gray-900 font-bold text-lg">{comparisons.length}</p><p className="text-gray-500 text-xs">Comparisons</p></div>
-          <div><p className="text-gray-900 font-bold text-lg">{evidence.length}</p><p className="text-gray-500 text-xs">Evidence</p></div>
-          <div><p className="text-gray-900 font-bold text-lg">{user._count.votes}</p><p className="text-gray-500 text-xs">Votes</p></div>
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <div className="accent-line"><h2 className="text-lg font-semibold text-gray-900">Submitted Comparisons <span className="text-gray-500 font-normal text-sm ml-2">({comparisons.length})</span></h2></div>
-        {comparisons.length === 0 ? (<p className="text-gray-500 text-sm">No comparisons submitted yet.</p>) : (
-          <div className="space-y-3">
-            {comparisons.map((comp) => {
-              const statusInfo = statusConfig[comp.status] ?? statusConfig.PENDING;
-              const display = getDisplayVerdict(comp);
-              return (
-                <div key={comp.id} className="glass rounded-2xl p-4 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    {comp.status === "APPROVED" ? (
-                      <Link href={`/compare/${comp.slug}`} className="text-gray-900 font-medium hover:text-[#0d1b4a] transition-colors text-sm leading-snug block">{comp.genericProductName} vs {comp.nameBrandProductName}</Link>
-                    ) : (<p className="text-gray-900 font-medium text-sm leading-snug">{comp.genericProductName} vs {comp.nameBrandProductName}</p>)}
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {comp.category && <span className="text-gray-500 text-xs">{comp.category.icon} {comp.category.name}</span>}
-                      <span className="text-gray-400 text-xs">{formatDate(comp.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {comp.status === "APPROVED" && <VerdictBadge verdict={display.verdict} size="sm" />}
-                    {isOwner && <Badge variant={statusInfo.variant} className="text-xs">{statusInfo.label}</Badge>}
-                  </div>
-                </div>
-              );
-            })}
+    <div className="min-h-screen">
+      <header className="relative overflow-hidden border-b border-line bg-hero">
+        <div aria-hidden="true" className="bg-dots absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent_80%)]" />
+        <div className="relative mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 md:flex-row md:items-end md:justify-between md:py-14 lg:px-8">
+          <div className="flex items-center gap-5">
+            <span
+              aria-hidden="true"
+              className="grid h-20 w-20 shrink-0 place-items-center rounded-[1.4rem] bg-brand font-display text-4xl text-tag shadow-card"
+            >
+              {user.username.charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow">Contributor</p>
+              <h1 className="mt-1.5 break-all font-display text-4xl leading-none tracking-tight text-ink sm:text-5xl">
+                {user.username}
+              </h1>
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted">
+                <CalendarDays aria-hidden="true" className="h-4 w-4" />
+                Member since {formatMonthYear(user.createdAt)}
+              </p>
+            </div>
           </div>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div className="accent-line"><h2 className="text-lg font-semibold text-gray-900">Evidence Contributions <span className="text-gray-500 font-normal text-sm ml-2">({evidence.length})</span></h2></div>
-        {evidence.length === 0 ? (<p className="text-gray-500 text-sm">No evidence submitted yet.</p>) : (
-          <div className="space-y-3">
-            {evidence.map((ev) => (
-              <div key={ev.id} className="glass rounded-2xl p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-gray-900 text-sm font-medium">{ev.title}</p>
-                  {isOwner && ev.status !== "APPROVED" && (
-                    <Badge variant={(statusConfig[ev.status] ?? statusConfig.PENDING).variant} className="text-xs shrink-0">
-                      {(statusConfig[ev.status] ?? statusConfig.PENDING).label}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-gray-500 text-xs capitalize">{ev.type.replace(/_/g, " ").toLowerCase()}</span>
-                  <span className="h-2.5 w-px bg-gray-200" aria-hidden="true" />
-                  {ev.comparison.status === "APPROVED" ? (
-                    <Link href={`/compare/${ev.comparison.slug}`} className="text-gray-600 hover:text-[#0d1b4a] transition-colors text-xs">{ev.comparison.genericProductName} vs {ev.comparison.nameBrandProductName}</Link>
-                  ) : (
-                    <span className="text-gray-600 text-xs">{ev.comparison.genericProductName} vs {ev.comparison.nameBrandProductName}</span>
-                  )}
-                  <span className="h-2.5 w-px bg-gray-200" aria-hidden="true" />
-                  <span className="text-gray-400 text-xs">{formatDate(ev.createdAt)}</span>
-                </div>
+          <dl className="grid grid-cols-3 gap-3">
+            {stats.map(({ label, value, Icon }) => (
+              <div key={label} className="card min-w-[6.5rem] px-4 py-3">
+                <dt className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted">
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                  {label}
+                </dt>
+                <dd className="mt-1 font-display text-3xl leading-none tabular-nums text-ink">{value}</dd>
               </div>
             ))}
-          </div>
+          </dl>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-5xl space-y-12 px-4 py-10 sm:px-6 md:py-12 lg:px-8">
+        {isOwner && (
+          <p className="rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-ink">
+            This is your public profile. Only your nickname and approved contributions are visible to others.
+          </p>
         )}
-      </section>
+
+        <section aria-labelledby="comparisons-heading">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 id="comparisons-heading" className="font-display text-3xl leading-none tracking-tight text-ink">
+              Submitted Comparisons <span className="font-sans text-base font-normal text-subtle">({comparisons.length})</span>
+            </h2>
+            {isOwner && (
+              <Link
+                href="/submit"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-brand-500 transition-colors hover:bg-brand-50"
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+                Add one
+              </Link>
+            )}
+          </div>
+          {comparisons.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-line-strong bg-surface-2 px-5 py-8 text-center text-sm text-muted">
+              No comparisons submitted yet.
+            </p>
+          ) : (
+            <ul className="card divide-y divide-line overflow-hidden">
+              {comparisons.map((comp) => {
+                const statusInfo = statusConfig[comp.status] ?? statusConfig.PENDING;
+                const display = getDisplayVerdict(comp);
+                const title = `${comp.genericProductName} vs ${comp.nameBrandProductName}`;
+                return (
+                  <li key={comp.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      {comp.status === "APPROVED" ? (
+                        <Link
+                          href={`/compare/${comp.slug}`}
+                          className="block text-[15px] font-semibold leading-snug text-ink transition-colors hover:text-brand-500"
+                        >
+                          {title}
+                        </Link>
+                      ) : (
+                        <p className="text-[15px] font-semibold leading-snug text-ink">{title}</p>
+                      )}
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                        {comp.category && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <CategoryIcon slug={comp.category.slug} size={14} />
+                            {comp.category.name}
+                          </span>
+                        )}
+                        <span>{formatDate(comp.createdAt)}</span>
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {comp.status === "APPROVED" && (
+                        <GenericStatusBadge verdict={display.verdict} savings={null} size="sm" source={display.source} hideSavings />
+                      )}
+                      {isOwner && (
+                        <Badge variant={statusInfo.variant} className="text-xs">
+                          {statusInfo.label}
+                        </Badge>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="evidence-heading">
+          <h2 id="evidence-heading" className="mb-5 font-display text-3xl leading-none tracking-tight text-ink">
+            Evidence Contributions <span className="font-sans text-base font-normal text-subtle">({evidence.length})</span>
+          </h2>
+          {evidence.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-line-strong bg-surface-2 px-5 py-8 text-center text-sm text-muted">
+              No evidence submitted yet.
+            </p>
+          ) : (
+            <ul className="card divide-y divide-line overflow-hidden">
+              {evidence.map((ev) => (
+                <li key={ev.id} className="px-5 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[15px] font-semibold leading-snug text-ink">{ev.title}</p>
+                    {isOwner && ev.status !== "APPROVED" && (
+                      <Badge variant={(statusConfig[ev.status] ?? statusConfig.PENDING).variant} className="shrink-0 text-xs">
+                        {(statusConfig[ev.status] ?? statusConfig.PENDING).label}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                    <span className="font-semibold uppercase tracking-[0.1em] text-subtle">
+                      {ev.type.replace(/_/g, " ").toLowerCase()}
+                    </span>
+                    {ev.comparison.status === "APPROVED" ? (
+                      <Link
+                        href={`/compare/${ev.comparison.slug}`}
+                        className="font-medium text-brand-500 transition-colors hover:underline"
+                      >
+                        {ev.comparison.genericProductName} vs {ev.comparison.nameBrandProductName}
+                      </Link>
+                    ) : (
+                      <span>
+                        {ev.comparison.genericProductName} vs {ev.comparison.nameBrandProductName}
+                      </span>
+                    )}
+                    <span>{formatDate(ev.createdAt)}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ export function FlaggedQueue({ initialFlagged }: { initialFlagged: FlaggedCompar
       {items.map((c) => (
         <div key={c.id} className="glass rounded-2xl p-5 space-y-3" data-testid="flagged-item">
           <div className="flex items-start justify-between gap-4">
-            <a href={`/compare/${c.slug}`} target="_blank" rel="noopener noreferrer" className="text-gray-900 font-semibold text-sm hover:text-[#0d1b4a]">
+            <a href={`/compare/${c.slug}`} target="_blank" rel="noopener noreferrer" className="text-gray-900 font-semibold text-sm hover:text-brand-500">
               {c.genericProductName} vs {c.nameBrandProductName}
             </a>
             <span className={`text-xs font-medium rounded-full px-2 py-0.5 shrink-0 ${c.flaggedOutdated ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>

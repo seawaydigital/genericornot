@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { CircleCheck } from "lucide-react";
 
 interface Comparison {
   id: string; genericProductName: string; genericBrand: string; genericStore: string;
@@ -52,10 +53,10 @@ export function SubmissionQueue({ initialComparisons }: SubmissionQueueProps) {
 
   if (comparisons.length === 0) {
     return (
-      <div className="glass rounded-2xl p-10 text-center">
-        <div className="text-4xl mb-3 opacity-40">&#10003;</div>
-        <p className="text-gray-700 font-medium">All caught up!</p>
-        <p className="text-gray-400 text-sm mt-1">No pending submissions to review.</p>
+      <div className="rounded-2xl border border-dashed border-line-strong bg-surface-2 p-10 text-center">
+        <CircleCheck aria-hidden="true" className="mx-auto mb-3 h-8 w-8 text-good" />
+        <p className="font-semibold text-ink">All caught up!</p>
+        <p className="mt-1 text-sm text-muted">No pending submissions to review.</p>
       </div>
     );
   }

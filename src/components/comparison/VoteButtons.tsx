@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Scale, ThumbsDown, ThumbsUp, type LucideIcon } from "lucide-react";
 import { VOTE_LABELS } from "@/lib/verdict-labels";
 
 export type VoteValue = "SAME_QUALITY" | "CLOSE_ENOUGH" | "NOT_WORTH_IT";
@@ -12,27 +13,27 @@ interface VoteButtonsProps {
 
 const VOTE_OPTIONS: {
   value: VoteValue;
-  emoji: string;
+  Icon: LucideIcon;
   selectedClass: string;
   unselectedClass: string;
 }[] = [
   {
     value: "SAME_QUALITY",
-    emoji: "👍",
-    selectedClass: "bg-emerald-50 border-emerald-300 text-emerald-700",
-    unselectedClass: "bg-white border-gray-200 text-gray-600 hover:border-emerald-200 hover:text-emerald-700",
+    Icon: ThumbsUp,
+    selectedClass: "bg-good-bg border-good text-good ring-4 ring-good/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-good-line hover:bg-good-bg/60",
   },
   {
     value: "CLOSE_ENOUGH",
-    emoji: "🤷",
-    selectedClass: "bg-amber-50 border-amber-300 text-amber-700",
-    unselectedClass: "bg-white border-gray-200 text-gray-600 hover:border-amber-200 hover:text-amber-700",
+    Icon: Scale,
+    selectedClass: "bg-close-bg border-close text-close ring-4 ring-close/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-close-line hover:bg-close-bg/60",
   },
   {
     value: "NOT_WORTH_IT",
-    emoji: "👎",
-    selectedClass: "bg-red-50 border-red-300 text-red-700",
-    unselectedClass: "bg-white border-gray-200 text-gray-600 hover:border-red-200 hover:text-red-700",
+    Icon: ThumbsDown,
+    selectedClass: "bg-bad-bg border-bad text-bad ring-4 ring-bad/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-bad-line hover:bg-bad-bg/60",
   },
 ];
 
@@ -48,13 +49,16 @@ export function VoteButtons({ currentVote, onVote, disabled = false }: VoteButto
             onClick={() => onVote(option.value)}
             disabled={disabled}
             aria-pressed={isSelected}
-            className={`flex flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-3 text-sm leading-tight text-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0d1b4a]/30 ${
+            className={`relative flex min-h-[5.5rem] flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center text-sm font-semibold leading-tight transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ${
               isSelected ? option.selectedClass : option.unselectedClass
             }`}
           >
-            <span className="text-xl" aria-hidden="true">
-              {option.emoji}
-            </span>
+            {isSelected && (
+              <span aria-hidden="true" className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-current">
+                <Check className="h-3 w-3 text-white" strokeWidth={3} />
+              </span>
+            )}
+            <option.Icon aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
             <span>{VOTE_LABELS[option.value]}</span>
           </button>
         );

@@ -21,11 +21,17 @@ describe("CategoryGrid", () => {
     expect(screen.getByText("Cleaning Supplies")).toBeInTheDocument();
   });
 
-  it("renders emoji icons for each category", () => {
-    render(<CategoryGrid categories={categories} />);
-    expect(screen.getByText("💊")).toBeInTheDocument();
-    expect(screen.getByText("🍎")).toBeInTheDocument();
-    expect(screen.getByText("🧹")).toBeInTheDocument();
+  it("draws SVG icons instead of emoji", () => {
+    const { container } = render(<CategoryGrid categories={categories} />);
+    expect(screen.queryByText("💊")).not.toBeInTheDocument();
+    // One decorative category icon per tile (plus the arrow on each tile).
+    const icons = container.querySelectorAll('a[href^="/categories/"] svg[aria-hidden="true"]');
+    expect(icons.length).toBe(categories.length * 2);
+  });
+
+  it("keeps an accessible heading when the visible heading is hidden", () => {
+    render(<CategoryGrid categories={categories} hideHeading />);
+    expect(screen.getByRole("heading", { name: /browse by category/i })).toHaveClass("sr-only");
   });
 
   it("links to correct category URL", () => {
