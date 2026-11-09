@@ -27,7 +27,6 @@ const base = {
   verdict: "PENDING",
   editorialVerdict: null,
   editorialNote: null,
-  confidenceScore: 0,
   totalVotes: 0,
   lastVerifiedAt: null,
   flaggedOutdated: false,
@@ -52,12 +51,61 @@ describe("ComparisonHero", () => {
     expect(screen.getByText("You save about 41% per unit by choosing Life Brand.")).toBeInTheDocument();
   });
 
-  it("shows the community verdict with real vote counts", () => {
-    render(<ComparisonHero {...base} verdict="SAME_QUALITY" totalVotes={12} confidenceScore={20} />);
+  it("shows the community verdict with real votes and the winning share, not a raw confidence score", () => {
+    render(
+      <ComparisonHero
+        {...base}
+        verdict="SAME_QUALITY"
+        totalVotes={12}
+        voteCounts={{ sameQuality: 10, closeEnough: 2, notWorthIt: 0 }}
+      />
+    );
     expect(screen.getByText("Generic Worth It")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
-    expect(screen.getByText("20%")).toBeInTheDocument();
+    expect(screen.getByText("83%")).toBeInTheDocument();
+    expect(screen.getByText("voted Same Quality")).toBeInTheDocument();
+    expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/research verdict/i)).not.toBeInTheDocument();
+  });
+
+  it("marks a verdict with few votes as an early result", () => {
+    render(
+      <ComparisonHero
+        {...base}
+        verdict="SAME_QUALITY"
+        totalVotes={5}
+        voteCounts={{ sameQuality: 5, closeEnough: 0, notWorthIt: 0 }}
+      />
+    );
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByText("Early result")).toBeInTheDocument();
+  });
+
+  it("drops the early-result note once 20 people have voted", () => {
+    render(
+      <ComparisonHero
+        {...base}
+        verdict="CLOSE_ENOUGH"
+        totalVotes={40}
+        voteCounts={{ sameQuality: 10, closeEnough: 26, notWorthIt: 4 }}
+      />
+    );
+    expect(screen.getByText("65%")).toBeInTheDocument();
+    expect(screen.getByText("voted Close Enough")).toBeInTheDocument();
+    expect(screen.queryByText("Early result")).not.toBeInTheDocument();
+  });
+
+  it("says when votes are split", () => {
+    render(
+      <ComparisonHero
+        {...base}
+        verdict="MIXED"
+        totalVotes={30}
+        voteCounts={{ sameQuality: 10, closeEnough: 10, notWorthIt: 10 }}
+      />
+    );
+    expect(screen.getByText("Mixed Reviews")).toBeInTheDocument();
+    expect(screen.getByText(/votes are split/i)).toBeInTheDocument();
   });
 
   it("labels a research verdict and says how many votes until the community takes over", () => {
@@ -80,7 +128,7 @@ describe("ComparisonHero", () => {
   });
 
   it("hides the savings tag when shoppers say to stick with the brand", () => {
-    render(<ComparisonHero {...base} verdict="NOT_WORTH_IT" totalVotes={8} confidenceScore={10} />);
+    render(<ComparisonHero {...base} verdict="NOT_WORTH_IT" totalVotes={8} />);
     expect(screen.getByText("Stick with Brand")).toBeInTheDocument();
     expect(screen.queryByText(/save 41%/i)).not.toBeInTheDocument();
   });

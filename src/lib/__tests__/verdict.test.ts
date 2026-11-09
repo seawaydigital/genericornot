@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { computeVerdict, computeSavings, getDisplayVerdict, savingsAreUnitBased, tallyVotes } from "../verdict";
+import {
+  computeVerdict,
+  computeSavings,
+  EARLY_RESULT_VOTES,
+  getDisplayVerdict,
+  isEarlyResult,
+  savingsAreUnitBased,
+  tallyVotes,
+  topVoteShare,
+} from "../verdict";
 
 describe("computeVerdict", () => {
   it("returns PENDING when fewer than 5 total votes", () => {
@@ -168,5 +177,26 @@ describe("tallyVotes", () => {
       closeEnough: 4,
       notWorthIt: 0,
     });
+  });
+});
+
+describe("topVoteShare", () => {
+  it("returns the rounded share of the most-chosen option", () => {
+    expect(topVoteShare({ sameQuality: 10, closeEnough: 2, notWorthIt: 0 })).toBe(83);
+    expect(topVoteShare({ sameQuality: 1, closeEnough: 1, notWorthIt: 1 })).toBe(33);
+    expect(topVoteShare({ sameQuality: 0, closeEnough: 0, notWorthIt: 4 })).toBe(100);
+  });
+
+  it("returns null when nobody has voted", () => {
+    expect(topVoteShare({ sameQuality: 0, closeEnough: 0, notWorthIt: 0 })).toBeNull();
+  });
+});
+
+describe("isEarlyResult", () => {
+  it("flags verdicts resting on fewer than 20 votes", () => {
+    expect(EARLY_RESULT_VOTES).toBe(20);
+    expect(isEarlyResult(5)).toBe(true);
+    expect(isEarlyResult(19)).toBe(true);
+    expect(isEarlyResult(20)).toBe(false);
   });
 });

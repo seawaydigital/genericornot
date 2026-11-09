@@ -4,7 +4,16 @@ import { SavingsTag } from "@/components/ui/SavingsTag";
 import { GenericStatusBadge, VERDICT_STYLES, verdictKey } from "./GenericStatusBadge";
 import { FreshnessIndicator } from "./FreshnessIndicator";
 import { FlagOutdatedButton } from "./FlagOutdatedButton";
-import { computeSavings, getDisplayVerdict, MIN_VOTES_FOR_VERDICT, savingsAreUnitBased } from "@/lib/verdict";
+import {
+  computeSavings,
+  getDisplayVerdict,
+  isEarlyResult,
+  MIN_VOTES_FOR_VERDICT,
+  savingsAreUnitBased,
+  topVoteShare,
+  type VoteCounts,
+} from "@/lib/verdict";
+import { VOTE_LABELS } from "@/lib/verdict-labels";
 import { describeSavings } from "@/lib/price-summary";
 import { formatCAD, formatCADPrecise } from "@/lib/format";
 import { formatUnitPrice } from "@/lib/units";
@@ -23,8 +32,9 @@ interface ComparisonHeroProps {
   verdict: string;
   editorialVerdict?: string | null;
   editorialNote?: string | null;
-  confidenceScore: number;
   totalVotes: number;
+  /** Live vote counts, used to show what share picked the winning option. */
+  voteCounts?: VoteCounts;
   lastVerifiedAt: string | null;
   flaggedOutdated: boolean;
 }
@@ -57,8 +67,8 @@ export function ComparisonHero(props: ComparisonHeroProps) {
     verdict,
     editorialVerdict,
     editorialNote,
-    confidenceScore,
     totalVotes,
+    voteCounts,
     lastVerifiedAt,
     flaggedOutdated,
   } = props;
@@ -71,6 +81,9 @@ export function ComparisonHero(props: ComparisonHeroProps) {
   const unitBased = savingsAreUnitBased(genericSize, nameBrandSize);
   const showSavings = savings !== null && savings > 0 && display.verdict !== "NOT_WORTH_IT";
   const summary = describeSavings({ genericBrand, genericPrice, genericSize, nameBrandPrice, nameBrandSize });
+  const share = voteCounts ? topVoteShare(voteCounts) : null;
+  const winningOption = VOTE_LABELS[display.verdict];
+  const early = isEarlyResult(totalVotes);
 
   return (
     <section aria-label="Comparison summary" className="overflow-hidden rounded-[1.75rem] border border-line bg-surface shadow-card">
@@ -125,17 +138,29 @@ export function ComparisonHero(props: ComparisonHeroProps) {
             <GenericStatusBadge verdict={display.verdict} savings={null} size="lg" source={display.source} hideSavings />
             <div className="text-[15px] leading-relaxed text-ink">
               {display.source === "community" && (
-                <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users aria-hidden="true" className={`h-4 w-4 ${style.text}`} />
-                    <span className="font-semibold tabular-nums">{totalVotes}</span>
-                    <span className="text-muted">vote{totalVotes !== 1 ? "s" : ""}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="font-semibold tabular-nums">{confidenceScore}%</span>
-                    <span className="text-muted">confidence</span>
-                  </span>
-                </p>
+                <div>
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users aria-hidden="true" className={`h-4 w-4 ${style.text}`} />
+                      <span className="font-semibold tabular-nums">{totalVotes}</span>
+                      <span className="text-muted">vote{totalVotes !== 1 ? "s" : ""}</span>
+                    </span>
+                    {display.verdict === "MIXED" ? (
+                      <span className="text-muted">Votes are split — no option above 40%</span>
+                    ) : share !== null && winningOption ? (
+                      <span>
+                        <span className="font-semibold tabular-nums">{share}%</span>{" "}
+                        <span className="text-muted">voted {winningOption}</span>
+                      </span>
+                    ) : null}
+                  </p>
+                  {early && (
+                    <p className="mt-0.5 text-sm text-muted">
+                      <span className="font-semibold text-ink">Early result</span> — it can still change as more shoppers
+                      vote.
+                    </p>
+                  )}
+                </div>
               )}
               {display.source === "research" && (
                 <div>

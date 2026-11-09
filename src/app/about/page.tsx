@@ -217,7 +217,10 @@ export default function AboutPage() {
                 </tbody>
               </table>
               <p className="border-t border-line px-5 py-4 text-sm leading-relaxed text-muted">
-                The <strong className="text-ink">confidence score</strong> reflects both how many people voted and how
+                Each comparison shows how many people voted and what share picked the winning option. Until 20 people
+                have voted, the verdict is marked as an <strong className="text-ink">early result</strong>, because a
+                handful of votes can still swing it. Best Swaps are ranked by a{" "}
+                <strong className="text-ink">confidence score</strong> that grows with both the number of votes and how
                 much they agree:{" "}
                 <code className="rounded-md bg-paper-deep px-1.5 py-0.5 text-xs text-ink">min(100, votes × 2) × top share</code>.
               </p>

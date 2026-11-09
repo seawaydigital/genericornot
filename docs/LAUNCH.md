@@ -57,7 +57,7 @@ You can delete the `R2_*` variables; the dead upload code is gone.
 
 ### Step 4 — Smoke test (5 minutes)
 
-- [ ] Homepage loads and shows "Popular Swaps" with Canadian products.
+- [ ] Homepage loads and shows "What Canadians are comparing" with Canadian products.
 - [ ] `/compare/life-brand-ibuprofen-vs-advil` shows a **Research** verdict, a
       price check in CAD and the "Not medical advice" note.
 - [ ] Sign in from a comparison page; you return to the same page.

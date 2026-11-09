@@ -6,6 +6,9 @@ export type VerdictValue = VoteValue | "MIXED" | "PENDING";
 /** Votes needed before a community verdict replaces "pending". */
 export const MIN_VOTES_FOR_VERDICT = 5;
 
+/** Below this many votes a community verdict is shown as an "early result". */
+export const EARLY_RESULT_VOTES = 20;
+
 export interface VoteCounts {
   sameQuality: number;
   closeEnough: number;
@@ -47,6 +50,22 @@ export function computeVerdict(votes: VoteCounts): VerdictResult {
   const confidenceScore = Math.round(Math.min(100, totalVotes * 2) * (topPercent / 100));
 
   return { verdict, confidenceScore, totalVotes };
+}
+
+/** Share of votes (0–100, rounded) for the most-chosen option; null with no votes. */
+export function topVoteShare(votes: VoteCounts): number | null {
+  const total = votes.sameQuality + votes.closeEnough + votes.notWorthIt;
+  if (total === 0) return null;
+  return Math.round((Math.max(votes.sameQuality, votes.closeEnough, votes.notWorthIt) / total) * 100);
+}
+
+/**
+ * True while a community verdict rests on only a handful of votes. Shoppers
+ * see "Early result" instead of a raw confidence score, which reads as
+ * "unsure" ("10% confidence") even when every voter agrees.
+ */
+export function isEarlyResult(totalVotes: number): boolean {
+  return totalVotes < EARLY_RESULT_VOTES;
 }
 
 /** Tally vote rows (or groupBy results) into counts. */

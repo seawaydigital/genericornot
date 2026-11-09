@@ -19,7 +19,7 @@ Community-driven website where **Canadian shoppers** look up, vote on, and contr
 - **Brand Logos:** logo.dev API (free tier 500K req/month, token in `NEXT_PUBLIC_LOGO_DEV_TOKEN`)
 - **Email:** Resend API for magic link emails (free tier 3K/month)
 - **Hosting:** Vercel (auto-deploys from GitHub master branch)
-- **Testing:** Vitest 4.1 + React Testing Library + happy-dom 21 (472 tests)
+- **Testing:** Vitest 4.1 + React Testing Library + happy-dom 21 (478 tests)
 - **Icons:** lucide-react (pinned exact). SVG icons only — no emoji in the UI
 - **Search:** PostgreSQL full-text search (tsvector + trigram) with a trigger keeping `searchVector` current. Falls back to Prisma `contains` if tsvector is unavailable.
 
@@ -110,7 +110,7 @@ docs/LAUNCH.md            # Launch runbook
 
 ### Verdicts (`src/lib/verdict.ts`)
 - Community verdict: PENDING < 5 votes; SAME_QUALITY / CLOSE_ENOUGH / NOT_WORTH_IT when the plurality > 40%; MIXED otherwise.
-- Confidence: `min(100, totalVotes * 2) * (topVotePercent / 100)`
+- Confidence: `min(100, totalVotes * 2) * (topVotePercent / 100)`. Used for ranking (Best Swaps), never shown raw: the comparison page shows the vote count, the winning option's share (`topVoteShare`) and "Early result" under 20 votes (`isEarlyResult`).
 - **Display verdict** (`getDisplayVerdict`): community verdict once it exists (≥ 5 votes); otherwise the research verdict (always labelled "Research"); otherwise "Awaiting Votes".
 - Filters and "Best Swaps" use the same effective verdict (`effectiveVerdictWhere`).
 
@@ -127,7 +127,7 @@ docs/LAUNCH.md            # Launch runbook
 - Admins can "Mark reviewed" (clears reports, stamps date) from the dashboard or the inline AdminTools bar on any comparison page.
 
 ### Brand Logo Resolution (`src/lib/brand-logos.ts`)
-- Exact brand-name → domain map (Canadian brands included; store brands map to their retailer). Unknown brands fall back to the category emoji — only add domains you're sure of.
+- Exact brand-name → domain map (Canadian brands included; store brands map to their retailer). Unknown brands (or no `NEXT_PUBLIC_LOGO_DEV_TOKEN`) fall back to a lettered monogram, e.g. "LB" for Life Brand — only add domains you're sure of.
 
 ### Search (`src/lib/search.ts`)
 - Parses "X vs Y" queries; tsvector + `similarity()` ranking; falls back to Prisma `contains`.
@@ -156,7 +156,7 @@ Custom utilities via `@utility`: `card`, `card-interactive`, `sale-tag`, `bg-her
 
 ```bash
 npm run dev          # Start dev server (port 3000)
-npm test             # Run Vitest tests (472)
+npm test             # Run Vitest tests (478)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 npx tsc --noEmit     # Type-check (tests included)

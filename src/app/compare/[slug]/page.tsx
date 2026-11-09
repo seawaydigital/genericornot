@@ -179,8 +179,8 @@ export default async function ComparisonPage({ params }: PageProps) {
           verdict={comparison.verdict}
           editorialVerdict={comparison.editorialVerdict}
           editorialNote={comparison.editorialNote}
-          confidenceScore={comparison.confidenceScore}
           totalVotes={totalVotes}
+          voteCounts={counts}
           lastVerifiedAt={comparison.lastVerifiedAt ? comparison.lastVerifiedAt.toISOString() : null}
           flaggedOutdated={comparison.flaggedOutdated}
         />
