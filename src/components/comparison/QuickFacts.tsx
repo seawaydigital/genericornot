@@ -1,3 +1,5 @@
+import { BadgeCheck, CircleHelp, Factory, FlaskConical, Users, Video, type LucideIcon } from "lucide-react";
+
 type ConfidenceLevel = "CONFIRMED" | "COMMUNITY" | "UNVERIFIED";
 
 interface Evidence {
@@ -11,7 +13,7 @@ interface QuickFactsProps {
 
 interface Fact {
   label: string;
-  icon: string;
+  Icon: LucideIcon;
   confidence: ConfidenceLevel;
 }
 
@@ -24,59 +26,53 @@ function bestConfidence(evidences: Evidence[]): ConfidenceLevel {
   return "UNVERIFIED";
 }
 
-const confidenceBadge: Record<ConfidenceLevel, { label: string; color: string }> = {
-  CONFIRMED: { label: "Confirmed", color: "text-emerald-700" },
-  COMMUNITY: { label: "Community", color: "text-blue-700" },
-  UNVERIFIED: { label: "Unverified", color: "text-gray-400" },
+const confidenceBadge: Record<ConfidenceLevel, { label: string; Icon: LucideIcon; color: string }> = {
+  CONFIRMED: { label: "Confirmed", Icon: BadgeCheck, color: "text-good" },
+  COMMUNITY: { label: "Community", Icon: Users, color: "text-brand-500" },
+  UNVERIFIED: { label: "Unverified", Icon: CircleHelp, color: "text-subtle" },
 };
 
 export function QuickFacts({ evidence }: QuickFactsProps) {
   const byType = (type: string) => evidence.filter((e) => e.type === type);
 
   const facts: Fact[] = [];
-
   const mfrEvidence = byType("MANUFACTURER_INFO");
   if (mfrEvidence.length > 0) {
-    facts.push({ label: "Same Manufacturer", icon: "\u2713", confidence: bestConfidence(mfrEvidence) });
+    facts.push({ label: "Manufacturer Info", Icon: Factory, confidence: bestConfidence(mfrEvidence) });
   }
   const ingEvidence = byType("INGREDIENT_COMPARISON");
   if (ingEvidence.length > 0) {
-    facts.push({ label: "Ingredients Compared", icon: "\u2713", confidence: bestConfidence(ingEvidence) });
+    facts.push({ label: "Ingredients Compared", Icon: FlaskConical, confidence: bestConfidence(ingEvidence) });
   }
   const vidEvidence = byType("VIDEO_LINK");
   if (vidEvidence.length > 0) {
-    facts.push({ label: "Video Review", icon: "\u2713", confidence: bestConfidence(vidEvidence) });
-  }
-
-  if (facts.length === 0) {
-    return (
-      <div className="glass rounded-2xl p-6">
-        <h2 className="text-gray-900 font-semibold text-base mb-3">Quick Facts</h2>
-        <p className="text-gray-400 text-sm">
-          No details yet — be the first to contribute!
-        </p>
-      </div>
-    );
+    facts.push({ label: "Video Review", Icon: Video, confidence: bestConfidence(vidEvidence) });
   }
 
   return (
-    <div className="glass rounded-2xl p-6">
-      <h2 className="text-gray-900 font-semibold text-base mb-4">Quick Facts</h2>
-      <div className="grid grid-cols-3 gap-3">
-        {facts.map((fact) => {
-          const badge = confidenceBadge[fact.confidence];
-          return (
-            <div
-              key={fact.label}
-              className="flex flex-col items-center gap-2 bg-gray-50 rounded-xl p-3 text-center"
-            >
-              <span className="text-emerald-600 font-bold text-lg">{fact.icon}</span>
-              <span className="text-gray-600 text-xs font-medium leading-snug">{fact.label}</span>
-              <span className={`text-xs ${badge.color}`}>{badge.label}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <section className="card p-6">
+      <h2 className="text-sm font-semibold text-ink">Quick Facts</h2>
+      {facts.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">No details yet — be the first to contribute!</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {facts.map((fact) => {
+            const badge = confidenceBadge[fact.confidence];
+            return (
+              <li key={fact.label} className="flex items-center gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-paper text-ink">
+                  <fact.Icon aria-hidden="true" className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1 text-sm font-medium text-ink">{fact.label}</span>
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold ${badge.color}`}>
+                  <badge.Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                  {badge.label}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -1,135 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { Check, Scale, ThumbsDown, ThumbsUp, type LucideIcon } from "lucide-react";
+import { VOTE_LABELS } from "@/lib/verdict-labels";
 
-type VoteValue = "SAME_QUALITY" | "CLOSE_ENOUGH" | "NOT_WORTH_IT";
+export type VoteValue = "SAME_QUALITY" | "CLOSE_ENOUGH" | "NOT_WORTH_IT";
 
 interface VoteButtonsProps {
-  comparisonId: string;
-  initialVote?: string | null;
-  initialVoteCounts?: {
-    sameQuality: number;
-    closeEnough: number;
-    notWorthIt: number;
-  };
+  currentVote: VoteValue | null;
+  onVote: (value: VoteValue) => void;
+  disabled?: boolean;
 }
 
 const VOTE_OPTIONS: {
   value: VoteValue;
-  label: string;
-  emoji: string;
+  Icon: LucideIcon;
   selectedClass: string;
   unselectedClass: string;
 }[] = [
   {
     value: "SAME_QUALITY",
-    label: "Same Quality",
-    emoji: "\ud83d\udc4d",
-    selectedClass:
-      "bg-emerald-50 border-emerald-300 text-emerald-700",
-    unselectedClass:
-      "bg-white border-gray-200 text-gray-500 hover:border-emerald-200 hover:text-emerald-600",
+    Icon: ThumbsUp,
+    selectedClass: "bg-good-bg border-good text-good ring-4 ring-good/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-good-line hover:bg-good-bg/60",
   },
   {
     value: "CLOSE_ENOUGH",
-    label: "Close Enough",
-    emoji: "\ud83e\udd37",
-    selectedClass:
-      "bg-amber-50 border-amber-300 text-amber-700",
-    unselectedClass:
-      "bg-white border-gray-200 text-gray-500 hover:border-amber-200 hover:text-amber-600",
+    Icon: Scale,
+    selectedClass: "bg-close-bg border-close text-close ring-4 ring-close/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-close-line hover:bg-close-bg/60",
   },
   {
     value: "NOT_WORTH_IT",
-    label: "Not Worth It",
-    emoji: "\ud83d\udc4e",
-    selectedClass:
-      "bg-red-50 border-red-300 text-red-700",
-    unselectedClass:
-      "bg-white border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-600",
+    Icon: ThumbsDown,
+    selectedClass: "bg-bad-bg border-bad text-bad ring-4 ring-bad/10",
+    unselectedClass: "bg-surface border-line text-ink hover:border-bad-line hover:bg-bad-bg/60",
   },
 ];
 
-export function VoteButtons({
-  comparisonId,
-  initialVote = null,
-}: VoteButtonsProps) {
-  const { data: session, status } = useSession();
-  const [currentVote, setCurrentVote] = useState<VoteValue | null>(
-    (initialVote as VoteValue) ?? null
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (status === "loading" || status === "unauthenticated" || !session) {
-    return (
-      <div className="glass rounded-2xl p-5 text-center">
-        <p className="text-gray-500 text-sm">
-          <a href="/auth/signin" className="text-[#0d1b4a] hover:underline font-medium">
-            Sign in to vote
-          </a>{" "}
-          on this comparison.
-        </p>
-      </div>
-    );
-  }
-
-  async function handleVote(value: VoteValue) {
-    if (isLoading) return;
-    const previousVote = currentVote;
-    setCurrentVote(value);
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("/api/votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comparisonId, value }),
-      });
-
-      if (!res.ok) {
-        setCurrentVote(previousVote);
-        setError("Failed to save your vote. Please try again.");
-      }
-    } catch {
-      setCurrentVote(previousVote);
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
+export function VoteButtons({ currentVote, onVote, disabled = false }: VoteButtonsProps) {
   return (
-    <div className="space-y-3">
-      <p className="text-gray-500 text-sm font-medium">Cast your vote</p>
-      <div className="flex flex-col sm:flex-row gap-3">
-        {VOTE_OPTIONS.map((option) => {
-          const isSelected = currentVote === option.value;
-          return (
-            <button
-              key={option.value}
-              onClick={() => handleVote(option.value)}
-              disabled={isLoading}
-              aria-pressed={isSelected}
-              className={`flex-1 flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isSelected ? option.selectedClass : option.unselectedClass
-              }`}
-            >
-              <span className="text-xl" role="img" aria-hidden="true">
-                {option.emoji}
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label="Your vote">
+      {VOTE_OPTIONS.map((option) => {
+        const isSelected = currentVote === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onVote(option.value)}
+            disabled={disabled}
+            aria-pressed={isSelected}
+            className={`relative flex min-h-[5.5rem] flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-center text-sm font-semibold leading-tight transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ${
+              isSelected ? option.selectedClass : option.unselectedClass
+            }`}
+          >
+            {isSelected && (
+              <span aria-hidden="true" className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-current">
+                <Check className="h-3 w-3 text-white" strokeWidth={3} />
               </span>
-              <span>{option.label}</span>
-            </button>
-          );
-        })}
-      </div>
-      {error && (
-        <p className="text-red-600 text-xs text-center" role="alert">
-          {error}
-        </p>
-      )}
+            )}
+            <option.Icon aria-hidden="true" className="h-6 w-6" strokeWidth={2} />
+            <span>{VOTE_LABELS[option.value]}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -14,8 +14,8 @@
 
 import "dotenv/config";
 import * as readline from "node:readline";
-import { PrismaClient, UserRole } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { UserRole } from "@prisma/client";
+import { createPrismaClient } from "../src/lib/db";
 
 function prompt(question: string): Promise<string> {
   const rl = readline.createInterface({
@@ -55,8 +55,7 @@ async function main() {
     process.exit(0);
   }
 
-  const adapter = new PrismaNeon({ connectionString: dbUrl });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = createPrismaClient(dbUrl);
 
   try {
     const user = await prisma.user.findUnique({

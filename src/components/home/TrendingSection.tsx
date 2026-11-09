@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/comparison/ProductCard";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 interface TrendingComparison {
   id: string; slug: string;
   genericProductName: string; genericBrand: string; genericStore: string; genericPrice: number | null;
+  genericSize?: string | null;
   nameBrandProductName: string; nameBrand: string; nameBrandPrice: number | null;
-  verdict: string; confidenceScore: number; totalVotes: number;
-  category?: { name: string; icon: string };
+  nameBrandSize?: string | null;
+  verdict: string; editorialVerdict?: string | null; confidenceScore: number; totalVotes: number;
+  category?: { name: string; icon: string; slug?: string };
 }
 
 interface TrendingSectionProps {
@@ -18,33 +21,25 @@ export function TrendingSection({ comparisons }: TrendingSectionProps) {
 
   return (
     <section aria-labelledby="trending-heading">
-      <div className="flex items-end justify-between mb-8">
-        <div className="accent-line">
-          <h2 id="trending-heading" className="text-2xl font-semibold text-gray-900 tracking-tight">
-            Popular Products
-          </h2>
-        </div>
-        <Link
-          href="/categories"
-          className="text-sm text-gray-400 font-medium transition-colors hover:text-gray-600 group"
-        >
-          View all <span className="inline-block transition-transform group-hover:translate-x-0.5">&rarr;</span>
-        </Link>
-      </div>
+      <SectionHeading
+        id="trending-heading"
+        eyebrow="Popular swaps"
+        title="What Canadians are comparing"
+        description="Name brands people buy every week, next to the store brand that could replace them."
+        action={{ href: "/top-rated", label: "View all" }}
+      />
 
       {top6.length === 0 ? (
-        <p className="text-gray-400 text-sm">No comparisons yet. Be the first to submit one!</p>
+        <div className="mt-8 card p-10 text-center">
+          <p className="text-muted">No comparisons yet.</p>
+          <Link href="/submit" className="mt-2 inline-block font-semibold text-brand-500 hover:text-brand">
+            Be the first to submit one
+          </Link>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {top6.map((comparison) => (
-            <ProductCard
-              key={comparison.id} slug={comparison.slug}
-              genericProductName={comparison.genericProductName} genericBrand={comparison.genericBrand}
-              genericStore={comparison.genericStore} genericPrice={comparison.genericPrice}
-              nameBrandProductName={comparison.nameBrandProductName} nameBrand={comparison.nameBrand}
-              nameBrandPrice={comparison.nameBrandPrice} verdict={comparison.verdict}
-              totalVotes={comparison.totalVotes} category={comparison.category}
-            />
+            <ProductCard key={comparison.id} {...comparison} />
           ))}
         </div>
       )}

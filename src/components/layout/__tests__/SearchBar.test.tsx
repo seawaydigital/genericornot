@@ -19,8 +19,18 @@ describe("SearchBar", () => {
 
   it("has correct placeholder text", () => {
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText("Find your favorite generic (e.g. Ibuprofen, Greek Yogurt)...");
+    const input = screen.getByPlaceholderText(/search a product or brand/i);
     expect(input).toBeInTheDocument();
+  });
+
+  it("has an accessible label", () => {
+    render(<SearchBar />);
+    expect(screen.getByLabelText(/search products and brands/i)).toBeInTheDocument();
+  });
+
+  it("pre-fills the current query", () => {
+    render(<SearchBar defaultValue="advil" />);
+    expect(screen.getByRole("searchbox")).toHaveValue("advil");
   });
 
   it("navigates to search page on submit", async () => {

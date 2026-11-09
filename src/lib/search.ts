@@ -54,23 +54,27 @@ async function searchWithVector(
     genericBrand: string;
     genericStore: string;
     genericPrice: number | null;
+    genericSize: string | null;
     nameBrandProductName: string;
     nameBrand: string;
     nameBrandPrice: number | null;
+    nameBrandSize: string | null;
     verdict: string;
+    editorialVerdict: string | null;
     confidenceScore: number;
     totalVotes: number;
     categoryId: string;
     categoryName: string | null;
     categoryIcon: string | null;
+    categorySlug: string | null;
     rank: number;
   }>>(
     `SELECT
       pc.id, pc.slug,
-      pc."genericProductName", pc."genericBrand", pc."genericStore", pc."genericPrice",
-      pc."nameBrandProductName", pc."nameBrand", pc."nameBrandPrice",
-      pc.verdict, pc."confidenceScore", pc."totalVotes", pc."categoryId",
-      c.name as "categoryName", c.icon as "categoryIcon",
+      pc."genericProductName", pc."genericBrand", pc."genericStore", pc."genericPrice", pc."genericSize",
+      pc."nameBrandProductName", pc."nameBrand", pc."nameBrandPrice", pc."nameBrandSize",
+      pc.verdict, pc."editorialVerdict", pc."confidenceScore", pc."totalVotes", pc."categoryId",
+      c.name as "categoryName", c.icon as "categoryIcon", c.slug as "categorySlug",
       (
         ts_rank(pc."searchVector", to_tsquery('english', $1)) * 2 +
         GREATEST(
@@ -122,7 +126,7 @@ async function searchWithVector(
       genericPrice: r.genericPrice != null ? Number(r.genericPrice) : null,
       nameBrandPrice: r.nameBrandPrice != null ? Number(r.nameBrandPrice) : null,
       category: r.categoryName
-        ? { name: r.categoryName, icon: r.categoryIcon ?? "" }
+        ? { name: r.categoryName, icon: r.categoryIcon ?? "", slug: r.categorySlug ?? undefined }
         : null,
     })),
     total,

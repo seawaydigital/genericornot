@@ -1,141 +1,237 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { ChevronDown, LayoutDashboard, LogOut, Menu, Plus, Search, User, X } from "lucide-react";
+import { Logo } from "./Logo";
+
+const NAV_LINKS = [
+  { label: "Best Swaps", href: "/top-rated" },
+  { label: "Categories", href: "/categories" },
+  { label: "New", href: "/new" },
+  { label: "About", href: "/about" },
+];
+
+function isActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  // Menus remember the page they were opened on, so they close automatically
+  // when the route changes — no effect (and no extra render) needed.
+  const [mobileOpenOn, setMobileOpenOn] = useState<string | null>(null);
+  const [menuOpenOn, setMenuOpenOn] = useState<string | null>(null);
+  const mobileOpen = mobileOpenOn !== null && mobileOpenOn === pathname;
+  const menuOpen = menuOpenOn !== null && menuOpenOn === pathname;
+  const menuRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
+  const user = session?.user;
+  const signInHref =
+    pathname && pathname !== "/" && !pathname.startsWith("/auth")
+      ? `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`
+      : "/auth/signin";
+  // The homepage and search page have their own big search box.
+  const showHeaderSearch = pathname !== "/" && pathname !== "/search";
 
-  const navLinks = [
-    { label: "Explore", href: "/categories" },
-    { label: "Categories", href: "/categories" },
-    { label: "About", href: "/about" },
-    { label: "Contribute", href: "/submit" },
-  ];
+  // Close the account menu on outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointer(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenOn(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpenOn(null);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const displayName = user?.username ?? user?.name ?? "Account";
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200/60">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between">
-          {/* Logo + desktop nav links */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="text-lg font-semibold text-[#0d1b4a] tracking-tight">
-              Generic<span className="font-[var(--font-instrument)] italic text-[#0d1b4a]"> Or </span>Not
-            </Link>
-            <div className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href + link.label}
-                  href={link.href}
-                  className="text-[13px] font-medium text-gray-500 tracking-wide transition-colors hover:text-gray-900"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+    <header className="sticky top-0 z-50 border-b border-line/80 bg-paper/85 backdrop-blur-lg">
+      <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="shrink-0 rounded-xl" aria-label="GenericOrNot home">
+          <Logo />
+        </Link>
 
-          {/* Right side: Search + Auth */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/search"
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Search"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
-              </svg>
-            </Link>
+        <div className="ml-6 hidden items-center gap-1 md:flex">
+          {NAV_LINKS.map((link) => {
+            const active = isActive(pathname, link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={`relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  active ? "text-ink" : "text-muted hover:bg-paper-deep hover:text-ink"
+                }`}
+              >
+                {link.label}
+                {active && <span aria-hidden="true" className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-brand" />}
+              </Link>
+            );
+          })}
+        </div>
 
-            {session?.user ? (
-              <div className="relative group">
-                <button className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition-all duration-200 hover:border-gray-300">
-                  {session.user.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name ?? "User"}
-                      className="h-5 w-5 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-5 w-5 rounded-full bg-[#0d1b4a]/10 text-[#0d1b4a] flex items-center justify-center text-[10px] font-bold">
-                      {(session.user.name ?? "U")[0].toUpperCase()}
-                    </div>
+        <div className="flex-1" />
+
+        {showHeaderSearch && (
+          <form role="search" action="/search" method="get" className="relative hidden w-52 lg:block xl:w-64">
+            <label htmlFor="header-search" className="sr-only">
+              Search products and brands
+            </label>
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+            <input
+              id="header-search"
+              name="q"
+              type="search"
+              maxLength={100}
+              placeholder="Search Advil, butter…"
+              className="h-10 w-full rounded-xl border border-line bg-surface pl-9 pr-3 text-sm text-ink placeholder:text-subtle shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15"
+            />
+          </form>
+        )}
+
+        <Link
+          href="/submit"
+          aria-label="Add a comparison"
+          className="hidden h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-line bg-surface px-3.5 text-sm font-semibold text-ink shadow-sm transition-colors hover:border-line-strong md:inline-flex"
+        >
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          <span className="xl:hidden">Add</span>
+          <span className="hidden xl:inline">Add a comparison</span>
+        </Link>
+
+        <div className="hidden md:block">
+          {user ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpenOn(menuOpen ? null : pathname)}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label={`Account menu for ${displayName}`}
+                className="flex h-10 items-center gap-2 rounded-xl border border-line bg-surface pl-1.5 pr-2.5 text-sm font-medium text-ink shadow-sm transition-colors hover:border-line-strong"
+              >
+                <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-lg bg-brand text-xs font-bold text-white">
+                  {displayName[0]?.toUpperCase()}
+                </span>
+                <span className="hidden max-w-[8rem] truncate xl:inline">{displayName}</span>
+                <ChevronDown aria-hidden="true" className={`h-4 w-4 text-subtle transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+              </button>
+              {menuOpen && (
+                <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-lift">
+                  {user.username && (
+                    <Link role="menuitem" href={`/user/${user.username}`} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink hover:bg-paper">
+                      <User aria-hidden="true" className="h-4 w-4 text-muted" />
+                      My profile
+                    </Link>
                   )}
-                  <span>{session.user.name}</span>
-                </button>
-                <div className="absolute right-0 mt-1 hidden group-hover:block w-40 rounded-xl bg-white border border-gray-200 py-1 shadow-lg">
+                  {user.role === "ADMIN" && (
+                    <Link role="menuitem" href="/admin" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink hover:bg-paper">
+                      <LayoutDashboard aria-hidden="true" className="h-4 w-4 text-muted" />
+                      Admin dashboard
+                    </Link>
+                  )}
+                  <div className="my-1 h-px bg-line" />
                   <button
+                    role="menuitem"
+                    type="button"
                     onClick={() => signOut()}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm text-ink hover:bg-paper"
                   >
+                    <LogOut aria-hidden="true" className="h-4 w-4 text-muted" />
                     Sign Out
                   </button>
                 </div>
-              </div>
-            ) : (
-              <Link
-                href="/auth/signin"
-                className="rounded-xl bg-[#0d1b4a] px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[#162d6b]"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href={signInHref}
+              className="inline-flex h-10 items-center rounded-xl bg-brand px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-600"
+            >
+              Sign In
+            </Link>
+          )}
+        </div>
 
-          {/* Mobile hamburger */}
+        {/* Mobile controls */}
+        <div className="flex items-center gap-1 md:hidden">
+          <Link href="/search" aria-label="Search" className="grid h-11 w-11 place-items-center rounded-xl text-ink hover:bg-paper-deep">
+            <Search aria-hidden="true" className="h-5 w-5" />
+          </Link>
           <button
-            className="md:hidden p-2 text-gray-400 hover:text-gray-700 transition-colors"
-            onClick={() => setMobileOpen((prev) => !prev)}
+            type="button"
+            className="grid h-11 w-11 place-items-center rounded-xl text-ink hover:bg-paper-deep"
+            onClick={() => setMobileOpenOn(mobileOpen ? null : pathname)}
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
           >
-            {mobileOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+            {mobileOpen ? <X aria-hidden="true" className="h-5 w-5" /> : <Menu aria-hidden="true" className="h-5 w-5" />}
           </button>
         </div>
-      </div>
+      </nav>
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4">
-          <div className="flex flex-col gap-3">
-            {navLinks.map((link) => (
+        <div id="mobile-menu" className="border-t border-line bg-paper px-4 pb-6 pt-3 shadow-lift md:hidden">
+          <div className="flex flex-col">
+            {NAV_LINKS.map((link) => (
               <Link
-                key={link.href + link.label}
+                key={link.href}
                 href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="text-sm text-gray-600 transition-colors hover:text-gray-900"
+                aria-current={isActive(pathname, link.href) ? "page" : undefined}
+                className="flex min-h-12 items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-paper-deep"
               >
                 {link.label}
               </Link>
             ))}
-            {session?.user ? (
+            {user?.username && (
+              <Link href={`/user/${user.username}`} className="flex min-h-12 items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-paper-deep">
+                My profile <span className="ml-2 text-sm text-subtle">({user.username})</span>
+              </Link>
+            )}
+            {user?.role === "ADMIN" && (
+              <Link href="/admin" className="flex min-h-12 items-center rounded-xl px-3 text-base font-medium text-ink hover:bg-paper-deep">
+                Admin dashboard
+              </Link>
+            )}
+          </div>
+          <div className="mt-4 grid gap-2">
+            <Link
+              href="/submit"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-surface text-base font-semibold text-ink"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add a comparison
+            </Link>
+            {user ? (
               <button
-                onClick={() => { signOut(); setMobileOpen(false); }}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                type="button"
+                onClick={() => signOut()}
+                className="flex min-h-12 items-center justify-center rounded-xl text-base font-medium text-muted hover:text-ink"
               >
                 Sign Out
               </button>
             ) : (
-              <Link
-                href="/auth/signin"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-xl bg-[#0d1b4a] px-4 py-2 text-center text-sm font-medium text-white"
-              >
+              <Link href={signInHref} className="flex min-h-12 items-center justify-center rounded-xl bg-brand text-base font-semibold text-white">
                 Sign In
               </Link>
             )}
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }

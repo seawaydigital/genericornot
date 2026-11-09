@@ -3,10 +3,10 @@ import { describe, it, expect } from "vitest";
 import { QuickFacts } from "../QuickFacts";
 
 describe("QuickFacts", () => {
-  it("shows 'Same Manufacturer' fact when MANUFACTURER_INFO evidence exists", () => {
+  it("shows 'Manufacturer Info' fact when MANUFACTURER_INFO evidence exists", () => {
     const evidence = [{ type: "MANUFACTURER_INFO" }];
     render(<QuickFacts evidence={evidence} />);
-    expect(screen.getByText("Same Manufacturer")).toBeInTheDocument();
+    expect(screen.getByText("Manufacturer Info")).toBeInTheDocument();
   });
 
   it("shows 'Ingredients Compared' fact when INGREDIENT_COMPARISON evidence exists", () => {
@@ -28,7 +28,7 @@ describe("QuickFacts", () => {
       { type: "VIDEO_LINK" },
     ];
     render(<QuickFacts evidence={evidence} />);
-    expect(screen.getByText("Same Manufacturer")).toBeInTheDocument();
+    expect(screen.getByText("Manufacturer Info")).toBeInTheDocument();
     expect(screen.getByText("Ingredients Compared")).toBeInTheDocument();
     expect(screen.getByText("Video Review")).toBeInTheDocument();
   });
@@ -36,7 +36,7 @@ describe("QuickFacts", () => {
   it("deduplicates facts when multiple evidence of same type exists", () => {
     const evidence = [{ type: "MANUFACTURER_INFO" }, { type: "MANUFACTURER_INFO" }];
     render(<QuickFacts evidence={evidence} />);
-    expect(screen.getAllByText("Same Manufacturer")).toHaveLength(1);
+    expect(screen.getAllByText("Manufacturer Info")).toHaveLength(1);
   });
 
   it("shows 'No details yet' message when no evidence", () => {
@@ -53,7 +53,7 @@ describe("QuickFacts", () => {
   it("does not show facts when only PHOTO or OTHER evidence exists", () => {
     const evidence = [{ type: "PHOTO" }, { type: "OTHER" }];
     render(<QuickFacts evidence={evidence} />);
-    expect(screen.queryByText("Same Manufacturer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Manufacturer Info")).not.toBeInTheDocument();
     expect(screen.queryByText("Ingredients Compared")).not.toBeInTheDocument();
     expect(screen.queryByText("Video Review")).not.toBeInTheDocument();
     // Should fall through to "no details yet" since no facts were derived

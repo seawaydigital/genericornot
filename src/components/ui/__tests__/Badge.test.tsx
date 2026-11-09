@@ -11,32 +11,32 @@ describe("Badge", () => {
   it("applies success variant classes", () => {
     render(<Badge variant="success">Test</Badge>);
     const badge = screen.getByText("Test");
-    expect(badge.className).toContain("text-emerald-700");
-    expect(badge.className).toContain("bg-emerald-50");
+    expect(badge.className).toContain("text-good");
+    expect(badge.className).toContain("bg-good-bg");
   });
 
   it("applies warning variant classes", () => {
     render(<Badge variant="warning">Test</Badge>);
     const badge = screen.getByText("Test");
-    expect(badge.className).toContain("text-amber-700");
+    expect(badge.className).toContain("text-close");
   });
 
   it("applies danger variant classes", () => {
     render(<Badge variant="danger">Test</Badge>);
     const badge = screen.getByText("Test");
-    expect(badge.className).toContain("text-red-700");
+    expect(badge.className).toContain("text-bad");
   });
 
   it("applies neutral variant classes", () => {
     render(<Badge variant="neutral">Test</Badge>);
     const badge = screen.getByText("Test");
-    expect(badge.className).toContain("text-gray-500");
+    expect(badge.className).toContain("text-neutral");
   });
 
   it("applies info variant classes", () => {
     render(<Badge variant="info">Test</Badge>);
     const badge = screen.getByText("Test");
-    expect(badge.className).toContain("text-blue-700");
+    expect(badge.className).toContain("text-brand");
   });
 
   it("accepts additional className", () => {

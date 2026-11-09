@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { prismaMock } from "@/test/mock-prisma";
 import { NextRequest } from "next/server";
+import { makeCategory, makeComparison, makeSession } from "@/test/fixtures";
 
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
@@ -12,11 +13,10 @@ vi.mock("@/lib/auth", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   submissionLimiter: { check: vi.fn(() => ({ success: true, remaining: 4, resetAt: new Date() })) },
-  voteLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
-  evidenceLimiter: { check: vi.fn(() => ({ success: true, remaining: 9, resetAt: new Date() })) },
 }));
 
 import { getServerSession } from "next-auth";
+import { submissionLimiter } from "@/lib/rate-limit";
 const mockGetServerSession = vi.mocked(getServerSession);
 
 import { POST } from "../route";
@@ -29,230 +29,167 @@ const makePostRequest = (body: unknown) =>
   });
 
 const validBody = {
-  genericProductName: "Great Value Cereal",
-  genericBrand: "Great Value",
-  genericStore: "Walmart",
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
+  genericProductName: "No Name Macaroni & Cheese Dinner",
+  genericBrand: "No Name",
+  genericStore: "No Frills",
+  nameBrandProductName: "Kraft Dinner Original",
+  nameBrand: "Kraft Dinner",
   categoryId: "cat-1",
 };
 
-const mockCreatedComparison = {
-  id: "comp-new",
-  slug: "great-value-cereal-vs-frosted-flakes",
-  genericProductName: "Great Value Cereal",
-  genericBrand: "Great Value",
-  genericStore: "Walmart",
-  genericPrice: null,
-  genericImageUrl: null,
-  nameBrandProductName: "Frosted Flakes",
-  nameBrand: "Kellogg's",
-  nameBrandPrice: null,
-  nameBrandImageUrl: null,
-  categoryId: "cat-1",
-  verdict: "PENDING" as const,
-  confidenceScore: 0,
-  totalVotes: 0,
-  status: "PENDING" as const,
-  rejectionReason: null,
-  submittedById: "user-1",
-  createdAt: new Date("2026-04-05"),
-  updatedAt: new Date("2026-04-05"),
-};
+function setUpHappyPath() {
+  mockGetServerSession.mockResolvedValue(makeSession());
+  prismaMock.category.findUnique.mockResolvedValue(makeCategory());
+  prismaMock.productComparison.findFirst.mockResolvedValue(null); // no duplicate, slug free
+  prismaMock.productComparison.create.mockResolvedValue(
+    makeComparison({ id: "comp-new", slug: "no-name-macaroni-cheese-dinner-vs-kraft-dinner-original", status: "PENDING" })
+  );
+}
 
 describe("POST /api/comparisons", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(submissionLimiter.check).mockReturnValue({ success: true, remaining: 4, resetAt: new Date() });
   });
 
   it("returns 401 when not authenticated", async () => {
     mockGetServerSession.mockResolvedValue(null);
-
-    const req = makePostRequest(validBody);
-    const res = await POST(req);
-    const body = await res.json();
-
+    const res = await POST(makePostRequest(validBody));
     expect(res.status).toBe(401);
-    expect(body.error).toBeDefined();
+    expect((await res.json()).error).toBeDefined();
+  });
+
+  it("returns 429 when rate limited", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    vi.mocked(submissionLimiter.check).mockReturnValue({ success: false, remaining: 0, resetAt: new Date() });
+    const res = await POST(makePostRequest(validBody));
+    expect(res.status).toBe(429);
   });
 
   it("returns 400 when required fields are missing", async () => {
-    mockGetServerSession.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Test",
-        email: "test@test.com",
-        role: "USER",
-        username: "test-123",
-      },
-      expires: "2099-01-01",
-    });
-
-    const incompleteBody = {
-      genericProductName: "Great Value Cereal",
-      // missing genericBrand, genericStore, nameBrandProductName, nameBrand, categoryId
-    };
-
-    const req = makePostRequest(incompleteBody);
-    const res = await POST(req);
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ genericProductName: "No Name Mac & Cheese" }));
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.errors).toBeDefined();
-    expect(body.errors).toHaveProperty("genericBrand");
-    expect(body.errors).toHaveProperty("genericStore");
-    expect(body.errors).toHaveProperty("nameBrandProductName");
-    expect(body.errors).toHaveProperty("nameBrand");
-    expect(body.errors).toHaveProperty("categoryId");
-  });
-
-  it("returns 400 for each individually missing required field", async () => {
-    mockGetServerSession.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Test",
-        email: "test@test.com",
-        role: "USER",
-        username: "test-123",
-      },
-      expires: "2099-01-01",
-    });
-
-    const requiredFields = [
-      "genericProductName",
-      "genericBrand",
-      "genericStore",
-      "nameBrandProductName",
-      "nameBrand",
-      "categoryId",
-    ];
-
-    for (const field of requiredFields) {
-      const body = { ...validBody, [field]: "" };
-      const req = makePostRequest(body);
-      const res = await POST(req);
-      const resBody = await res.json();
-
-      expect(res.status).toBe(400);
-      expect(resBody.errors).toHaveProperty(field);
+    for (const field of ["genericBrand", "genericStore", "nameBrandProductName", "nameBrand", "categoryId"]) {
+      expect(body.errors).toHaveProperty(field);
     }
   });
 
-  it("creates comparison with PENDING status and auto-generated slug", async () => {
-    mockGetServerSession.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Test",
-        email: "test@test.com",
-        role: "USER",
-        username: "test-123",
-      },
-      expires: "2099-01-01",
-    });
-
-    // generateUniqueSlug calls findFirst — no collision
-    prismaMock.productComparison.findFirst.mockResolvedValue(null);
-    prismaMock.productComparison.create.mockResolvedValue(
-      mockCreatedComparison
-    );
-
-    const req = makePostRequest(validBody);
-    const res = await POST(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(201);
-    expect(body.comparison).toBeDefined();
-    expect(body.comparison.status).toBe("PENDING");
-    expect(body.comparison.verdict).toBe("PENDING");
-    expect(body.comparison.submittedById).toBe("user-1");
-
-    expect(prismaMock.productComparison.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: "PENDING",
-          verdict: "PENDING",
-          submittedById: "user-1",
-          genericProductName: "Great Value Cereal",
-          nameBrandProductName: "Frosted Flakes",
-          categoryId: "cat-1",
-        }),
-      })
-    );
+  it("returns 400 for each individually missing required field", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    for (const field of Object.keys(validBody)) {
+      const body = { ...validBody, [field]: "   " };
+      const res = await POST(makePostRequest(body));
+      const json = await res.json();
+      expect(res.status).toBe(400);
+      expect(json.errors).toHaveProperty(field);
+    }
   });
 
-  it("slug is auto-generated from product names", async () => {
-    mockGetServerSession.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Test",
-        email: "test@test.com",
-        role: "USER",
-        username: "test-123",
-      },
-      expires: "2099-01-01",
-    });
-
-    prismaMock.productComparison.findFirst.mockResolvedValue(null);
-    prismaMock.productComparison.create.mockResolvedValue(
-      mockCreatedComparison
-    );
-
-    const req = makePostRequest(validBody);
-    await POST(req);
-
-    expect(prismaMock.productComparison.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          slug: "great-value-cereal-vs-frosted-flakes",
-        }),
-      })
-    );
+  it("rejects fields longer than the limit", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ ...validBody, genericBrand: "x".repeat(61) }));
+    const json = await res.json();
+    expect(res.status).toBe(400);
+    expect(json.errors.genericBrand).toMatch(/60 characters/);
   });
 
-  it("accepts optional price and image fields", async () => {
-    mockGetServerSession.mockResolvedValue({
-      user: {
-        id: "user-1",
-        name: "Test",
-        email: "test@test.com",
-        role: "USER",
-        username: "test-123",
-      },
-      expires: "2099-01-01",
-    });
+  it("rejects negative, huge or non-numeric prices", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    for (const price of [-1, 100000, "abc"]) {
+      const res = await POST(makePostRequest({ ...validBody, genericPrice: price }));
+      const json = await res.json();
+      expect(res.status).toBe(400);
+      expect(json.errors).toHaveProperty("genericPrice");
+    }
+  });
 
-    prismaMock.productComparison.findFirst.mockResolvedValue(null);
-    const compWithPrices = {
-      ...mockCreatedComparison,
-      genericPrice: 2.99,
-      nameBrandPrice: 4.99,
-      genericImageUrl: "https://r2.example.com/generic.jpg",
-      nameBrandImageUrl: "https://r2.example.com/namebrand.jpg",
-    };
-    prismaMock.productComparison.create.mockResolvedValue(compWithPrices);
+  it("returns 400 when the category doesn't exist", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    prismaMock.category.findUnique.mockResolvedValue(null);
+    const res = await POST(makePostRequest(validBody));
+    const json = await res.json();
+    expect(res.status).toBe(400);
+    expect(json.errors).toHaveProperty("categoryId");
+    expect(prismaMock.productComparison.create).not.toHaveBeenCalled();
+  });
 
-    const bodyWithOptionals = {
-      ...validBody,
-      genericPrice: 2.99,
-      nameBrandPrice: 4.99,
-      genericImageUrl: "https://r2.example.com/generic.jpg",
-      nameBrandImageUrl: "https://r2.example.com/namebrand.jpg",
-    };
+  it("returns 409 with a link when an approved duplicate exists", async () => {
+    setUpHappyPath();
+    prismaMock.productComparison.findFirst.mockResolvedValueOnce(makeComparison({ slug: "existing-slug", status: "APPROVED" }));
+    const res = await POST(makePostRequest(validBody));
+    const json = await res.json();
+    expect(res.status).toBe(409);
+    expect(json.duplicate).toBe(true);
+    expect(json.existingSlug).toBe("existing-slug");
+    expect(prismaMock.productComparison.create).not.toHaveBeenCalled();
+  });
 
-    const req = makePostRequest(bodyWithOptionals);
-    const res = await POST(req);
-    const body = await res.json();
+  it("returns 409 without a link when the duplicate is still pending review", async () => {
+    setUpHappyPath();
+    prismaMock.productComparison.findFirst.mockResolvedValueOnce(makeComparison({ slug: "pending-slug", status: "PENDING" }));
+    const res = await POST(makePostRequest(validBody));
+    const json = await res.json();
+    expect(res.status).toBe(409);
+    expect(json.existingSlug).toBeNull();
+  });
 
+  it("creates the comparison as PENDING with a generated slug and trimmed fields", async () => {
+    setUpHappyPath();
+    const res = await POST(makePostRequest({ ...validBody, genericBrand: "  No   Name  " }));
     expect(res.status).toBe(201);
-    expect(prismaMock.productComparison.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          genericPrice: 2.99,
-          nameBrandPrice: 4.99,
-          genericImageUrl: "https://r2.example.com/generic.jpg",
-          nameBrandImageUrl: "https://r2.example.com/namebrand.jpg",
-        }),
-      })
+
+    const call = prismaMock.productComparison.create.mock.calls[0][0];
+    expect(call.data).toMatchObject({
+      slug: "no-name-macaroni-cheese-dinner-vs-kraft-dinner-original",
+      genericBrand: "No Name",
+      status: "PENDING",
+      verdict: "PENDING",
+      totalVotes: 0,
+      submittedById: "user-1",
+    });
+    expect(call.data).not.toHaveProperty("evidence");
+  });
+
+  it("accepts prices as numbers or numeric strings, plus package sizes", async () => {
+    setUpHappyPath();
+    const res = await POST(
+      makePostRequest({ ...validBody, genericPrice: "0.99", nameBrandPrice: 1.79, genericSize: "225 g", nameBrandSize: "200 g" })
     );
+    expect(res.status).toBe(201);
+    expect(prismaMock.productComparison.create.mock.calls[0][0].data).toMatchObject({
+      genericPrice: 0.99,
+      nameBrandPrice: 1.79,
+      genericSize: "225 g",
+      nameBrandSize: "200 g",
+    });
+  });
+
+  it("creates initial evidence in the same request, held for review", async () => {
+    setUpHappyPath();
+    const res = await POST(
+      makePostRequest({ ...validBody, evidenceTitle: "Same noodles", evidenceContent: "Tastes the same to my kids." })
+    );
+    expect(res.status).toBe(201);
+    const data = prismaMock.productComparison.create.mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.evidence).toEqual({
+      create: expect.objectContaining({
+        userId: "user-1",
+        title: "Same noodles",
+        content: "Tastes the same to my kids.",
+        status: "PENDING",
+        confidence: "UNVERIFIED",
+      }),
+    });
+  });
+
+  it("requires both evidence title and details when either is given", async () => {
+    mockGetServerSession.mockResolvedValue(makeSession());
+    const res = await POST(makePostRequest({ ...validBody, evidenceTitle: "Only a title" }));
+    const json = await res.json();
+    expect(res.status).toBe(400);
+    expect(json.errors).toHaveProperty("evidenceContent");
   });
 });

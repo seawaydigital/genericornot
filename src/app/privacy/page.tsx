@@ -1,66 +1,171 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalList, LegalPage, LegalSection } from "@/components/ui/LegalPage";
+import { CONTACT_EMAIL } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Privacy Policy — GenericOrNot", description: "How GenericOrNot collects, uses, and protects your information." };
+export const metadata: Metadata = {
+  title: "Privacy Policy — GenericOrNot",
+  description: "What personal information GenericOrNot collects, why, where it's stored, and your rights under Canadian privacy law.",
+  alternates: { canonical: "/privacy" },
+};
+
+const linkClass = "font-medium text-brand-500 underline underline-offset-2 hover:text-brand";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-4 md:px-6 py-12 space-y-10">
-        <header>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Privacy Policy</h1>
-          <p className="mt-2 text-gray-400 text-sm">Last updated: April 2026</p>
-        </header>
+    <LegalPage
+      title="Privacy Policy"
+      updated="November 5, 2026"
+      intro={
+        <>
+          <p>
+            GenericOrNot is a community website where Canadians compare store-brand and name-brand products. This policy
+            explains what personal information we collect, why we collect it, and the choices you have. We handle
+            personal information in line with Canada&apos;s <em>Personal Information Protection and Electronic Documents
+            Act</em> (PIPEDA) and, for residents of Quebec, the <em>Act respecting the protection of personal information
+            in the private sector</em>.
+          </p>
+          <p>
+            The short version: you can browse without an account. If you sign in, we keep the minimum we need to run
+            your account, we show a random nickname instead of your name, and we never sell your information.
+          </p>
+        </>
+      }
+    >
+      <LegalSection title="Who is responsible">
+        <p>
+          Our Privacy Officer is responsible for how GenericOrNot handles personal information and answers privacy
+          questions and requests. Contact: <a href={`mailto:${CONTACT_EMAIL}?subject=Privacy`} className={linkClass}>{CONTACT_EMAIL}</a>{" "}
+          (subject line &ldquo;Privacy&rdquo;).
+        </p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Information We Collect</h2>
-          <div className="text-gray-600 text-sm leading-relaxed space-y-3">
-            <p>When you sign in with Google, we receive your name, email address, and profile photo from your Google account. We use this to create your GenericOrNot profile.</p>
-            <p>When you use the site, we collect information about your activity including votes cast, comparisons submitted, and evidence contributed.</p>
-          </div>
-        </section>
+      <LegalSection title="What we collect">
+        <LegalList
+          items={[
+            <>
+              <strong className="text-gray-800">When you sign in.</strong> If you use Google, Facebook or Microsoft, they
+              send us your name, email address and profile photo. If you use an emailed sign-in link, we receive only
+              your email address. We use this to create and secure your account.
+            </>,
+            <>
+              <strong className="text-gray-800">Your public nickname.</strong> We give every account a random nickname
+              (for example, &ldquo;thrifty-loon-4821&rdquo;). That nickname — not your real name — appears on your
+              profile and contributions.
+            </>,
+            <>
+              <strong className="text-gray-800">Your contributions.</strong> Votes, comparisons, evidence and
+              &ldquo;outdated&rdquo; reports you submit, with the date and time.
+            </>,
+            <>
+              <strong className="text-gray-800">Technical information.</strong> Our hosting provider processes IP
+              addresses and basic request details (browser type, pages requested) to deliver the site and protect it
+              from abuse. We use Vercel Web Analytics, which counts page views in aggregate without cookies and without
+              building a profile of you.
+            </>,
+          ]}
+        />
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">How We Use Your Information</h2>
-          <ul className="text-gray-600 text-sm leading-relaxed space-y-2 list-none">
-            <li className="flex gap-2"><span className="text-[#0d1b4a]/60 shrink-0">-</span><span>To operate the voting and comparison platform</span></li>
-            <li className="flex gap-2"><span className="text-[#0d1b4a]/60 shrink-0">-</span><span>To display your username on contributions you make</span></li>
-            <li className="flex gap-2"><span className="text-[#0d1b4a]/60 shrink-0">-</span><span>To compute community verdicts from aggregated votes</span></li>
-            <li className="flex gap-2"><span className="text-[#0d1b4a]/60 shrink-0">-</span><span>To prevent vote manipulation and enforce rate limits</span></li>
-          </ul>
-        </section>
+      <LegalSection title="What other people can see">
+        <p>
+          Your nickname, the month you joined, your approved comparisons and evidence, and the number of votes you have
+          cast. Your individual votes are not shown publicly — only the totals. Your real name, email address and photo
+          are never shown publicly.
+        </p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Cookies &amp; Local Storage</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">We use session cookies to keep you signed in. We do not use tracking cookies or third-party analytics.</p>
-        </section>
+      <LegalSection title="Why we use it">
+        <LegalList
+          items={[
+            "To run your account and let you vote, submit comparisons and add evidence",
+            "To calculate community verdicts from aggregated votes",
+            "To review submissions and to prevent spam, duplicate accounts and vote manipulation",
+            "To contact you about your account or a submission — we don't send marketing email",
+          ]}
+        />
+        <p>We do not sell or rent personal information, and we do not use it for advertising.</p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Third-Party Services</h2>
-          <div className="text-gray-600 text-sm leading-relaxed space-y-3">
-            <p><strong className="text-gray-700">Google OAuth</strong> — Used for authentication. See <a href="https://policies.google.com/privacy" className="text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors" target="_blank" rel="noopener noreferrer">Google&apos;s Privacy Policy</a>.</p>
-            <p><strong className="text-gray-700">Vercel</strong> — Hosts the site. See <a href="https://vercel.com/legal/privacy-policy" className="text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors" target="_blank" rel="noopener noreferrer">Vercel&apos;s Privacy Policy</a>.</p>
-            <p><strong className="text-gray-700">Neon</strong> — Hosts our database. Your data is stored securely on Neon&apos;s infrastructure.</p>
-          </div>
-        </section>
+      <LegalSection title="Cookies">
+        <p>
+          We only use cookies that are strictly necessary to sign you in and keep you signed in securely. We don&apos;t
+          use advertising cookies or cross-site tracking. If you&apos;re signed out you can use the site without them.
+        </p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Data Retention</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">Your account data is retained as long as your account is active. You may request full deletion by contacting us.</p>
-        </section>
+      <LegalSection title="Service providers and where your data is stored">
+        <p>We rely on these providers to run GenericOrNot:</p>
+        <LegalList
+          items={[
+            <><strong className="text-gray-800">Vercel</strong> — website hosting and aggregate analytics (United States)</>,
+            <><strong className="text-gray-800">Neon</strong> — database hosting (United States)</>,
+            <><strong className="text-gray-800">Google, Meta (Facebook) and Microsoft</strong> — sign-in, only if you choose them</>,
+            <><strong className="text-gray-800">Resend</strong> — delivers sign-in emails, if you use email sign-in</>,
+            <>
+              <strong className="text-gray-800">logo.dev</strong> — brand logos load directly from logo.dev, which
+              receives your IP address and browser details as it would for any image
+            </>,
+          ]}
+        />
+        <p>
+          Your information is stored and processed outside Canada, mainly in the United States, where it may be
+          accessible to courts and government authorities under local law. We choose providers that protect personal
+          information under contract and give them only what they need to provide their service.
+        </p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Your Rights</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">You have the right to access, correct, or delete your personal data. Contact us at the address below to exercise any of these rights.</p>
-        </section>
+      <LegalSection title="How long we keep it">
+        <p>
+          We keep your account information while your account is open. If you ask us to delete your account, we delete
+          your account, sign-in records, votes and personal details within 30 days. Approved comparisons you submitted
+          may remain on the site, with no link to you. Our hosting provider keeps short-lived server logs for security.
+        </p>
+      </LegalSection>
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Changes to This Policy</h2>
-          <p className="text-gray-600 text-sm leading-relaxed">We may update this privacy policy from time to time. Continued use of the site after changes constitutes acceptance.</p>
-        </section>
+      <LegalSection title="Your rights">
+        <p>
+          You can ask to access the personal information we hold about you, correct it, or delete your account. You can
+          withdraw your consent at any time by deleting your account. Email{" "}
+          <a href={`mailto:${CONTACT_EMAIL}?subject=Privacy`} className={linkClass}>{CONTACT_EMAIL}</a>; we respond
+          within 30 days.
+        </p>
+        <p>
+          If you&apos;re not satisfied with our response, you can complain to the{" "}
+          <a href="https://www.priv.gc.ca/" target="_blank" rel="noopener noreferrer" className={linkClass}>
+            Office of the Privacy Commissioner of Canada
+          </a>{" "}
+          or, in Quebec, the{" "}
+          <a href="https://www.cai.gouv.qc.ca/" target="_blank" rel="noopener noreferrer" className={linkClass}>
+            Commission d&apos;accès à l&apos;information
+          </a>
+          .
+        </p>
+      </LegalSection>
 
-        <div className="gradient-divider" />
-        <p className="text-gray-400 text-xs">Questions about this policy? <a href="/contact" className="text-[#0d1b4a] hover:text-[#1e3a7a] transition-colors">Contact us</a>.</p>
-      </div>
-    </div>
+      <LegalSection title="Age">
+        <p>You must be at least 14 years old to create an account.</p>
+      </LegalSection>
+
+      <LegalSection title="Security">
+        <p>
+          All connections use HTTPS, database access is restricted, and we collect as little as we can. If a breach of
+          security creates a real risk of significant harm to you, we will notify you and the Privacy Commissioner as
+          the law requires.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Changes to this policy">
+        <p>
+          We&apos;ll post any changes here with a new date. If a change is significant, we&apos;ll also tell signed-in
+          users on the site before it takes effect.
+        </p>
+      </LegalSection>
+
+      <div className="gradient-divider" />
+      <p className="text-gray-500 text-xs">
+        Questions about this policy? <Link href="/contact" className={linkClass}>Contact us</Link>.
+      </p>
+    </LegalPage>
   );
 }

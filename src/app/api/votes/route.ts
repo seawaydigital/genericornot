@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { computeVerdict } from "@/lib/verdict";
+import { computeVerdict, tallyVotes } from "@/lib/verdict";
 import { voteLimiter } from "@/lib/rate-limit";
 
 const VALID_VOTE_VALUES = ["SAME_QUALITY", "CLOSE_ENOUGH", "NOT_WORTH_IT"] as const;
 type VoteValue = (typeof VALID_VOTE_VALUES)[number];
+
+/**
+ * Optional anti-brigading delay: new accounts must exist this many minutes
+ * before their votes count. Defaults to 0 (off) because at launch every
+ * visitor is a brand-new account and a delay at the moment of first intent
+ * loses them. Raise it (e.g. 60) via env var if coordinated voting appears.
+ */
+function minAccountAgeMinutes(): number {
+  const raw = Number(process.env.VOTE_MIN_ACCOUNT_AGE_MINUTES ?? "0");
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
+}
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -33,32 +45,36 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to vote." }, { status: 401 });
   }
 
   const rateLimit = voteLimiter.check(session.user.id);
   if (!rateLimit.success) {
     return NextResponse.json(
-      { error: "Too many requests, please try again later" },
+      { error: "You're voting very quickly — please wait a minute and try again." },
       { status: 429 }
     );
   }
 
-  // Account age check: must be older than 1 hour to vote
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { createdAt: true },
-  });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-  const accountAgeMs = Date.now() - new Date(user.createdAt).getTime();
-  const ONE_HOUR_MS = 60 * 60 * 1000;
-  if (accountAgeMs < ONE_HOUR_MS) {
-    return NextResponse.json(
-      { error: "New accounts must wait 1 hour before voting" },
-      { status: 403 }
-    );
+  const minAge = minAccountAgeMinutes();
+  if (minAge > 0) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { createdAt: true },
+    });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    const ageMs = Date.now() - new Date(user.createdAt).getTime();
+    if (ageMs < minAge * 60 * 1000) {
+      const waitMinutes = Math.ceil(minAge - ageMs / 60000);
+      return NextResponse.json(
+        {
+          error: `New accounts can vote after ${minAge} minutes. Please try again in about ${waitMinutes} minute${waitMinutes === 1 ? "" : "s"}.`,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   let data: Record<string, unknown>;
@@ -87,6 +103,7 @@ export async function POST(req: NextRequest) {
 
   const comparison = await prisma.productComparison.findUnique({
     where: { id: comparisonId },
+    select: { id: true, slug: true, status: true },
   });
 
   if (!comparison || comparison.status !== "APPROVED") {
@@ -99,19 +116,15 @@ export async function POST(req: NextRequest) {
     update: { value: value as VoteValue },
   });
 
+  // Recount from the Vote table every time: the stored tally is a cache of
+  // real votes and can never drift from them.
   const voteCounts = await prisma.vote.groupBy({
     by: ["value"],
     where: { comparisonId },
     _count: true,
   });
 
-  const counts = { sameQuality: 0, closeEnough: 0, notWorthIt: 0 };
-  voteCounts.forEach((vc) => {
-    if (vc.value === "SAME_QUALITY") counts.sameQuality = vc._count;
-    else if (vc.value === "CLOSE_ENOUGH") counts.closeEnough = vc._count;
-    else if (vc.value === "NOT_WORTH_IT") counts.notWorthIt = vc._count;
-  });
-
+  const counts = tallyVotes(voteCounts.map((vc) => ({ value: vc.value, count: vc._count })));
   const result = computeVerdict(counts);
 
   await prisma.productComparison.update({
@@ -123,10 +136,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Comparison pages are cached (ISR); refresh this one so the next visitor
+  // sees the new tally immediately.
+  revalidatePath(`/compare/${comparison.slug}`);
+
   return NextResponse.json({
     vote,
     verdict: result.verdict,
     confidenceScore: result.confidenceScore,
     totalVotes: result.totalVotes,
+    counts,
   });
 }

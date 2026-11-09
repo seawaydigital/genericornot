@@ -2,17 +2,21 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
+import { ArrowDownUp, LayoutGrid } from "lucide-react";
+import { VERDICT_LABELS } from "@/lib/verdict-labels";
+import { VERDICT_STYLES } from "@/components/comparison/GenericStatusBadge";
 
 interface CategoryFilterProps {
   currentVerdict?: string;
   currentSort?: string;
 }
 
+// Filters use the same wording and icons as the verdict badges on the cards.
 const VERDICT_FILTERS = [
   { label: "All", value: "" },
-  { label: "Same Quality", value: "SAME_QUALITY" },
-  { label: "Close Enough", value: "CLOSE_ENOUGH" },
-  { label: "Not Worth It", value: "NOT_WORTH_IT" },
+  { label: VERDICT_LABELS.SAME_QUALITY, value: "SAME_QUALITY" },
+  { label: VERDICT_LABELS.CLOSE_ENOUGH, value: "CLOSE_ENOUGH" },
+  { label: VERDICT_LABELS.NOT_WORTH_IT, value: "NOT_WORTH_IT" },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -21,12 +25,6 @@ const SORT_OPTIONS = [
   { label: "Highest Savings", value: "savings" },
 ] as const;
 
-const verdictActiveColor: Record<string, string> = {
-  SAME_QUALITY: "border-emerald-300 text-emerald-700 bg-emerald-50",
-  CLOSE_ENOUGH: "border-amber-300 text-amber-700 bg-amber-50",
-  NOT_WORTH_IT: "border-red-300 text-red-700 bg-red-50",
-};
-
 export function CategoryFilter({ currentVerdict = "", currentSort = "totalVotes" }: CategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,45 +32,57 @@ export function CategoryFilter({ currentVerdict = "", currentSort = "totalVotes"
   const updateParams = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value) { params.set(key, value); } else { params.delete(key); }
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
       params.delete("page");
-      router.push(`?${params.toString()}`);
+      router.push(`?${params.toString()}`, { scroll: false });
     },
     [router, searchParams]
   );
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by verdict">
         {VERDICT_FILTERS.map(({ label, value }) => {
           const isActive = currentVerdict === value;
-          const activeColorClass = value === ""
-            ? "border-gray-400 text-gray-900 bg-gray-50"
-            : (verdictActiveColor[value] ?? "border-gray-400 text-gray-900 bg-gray-50");
+          const style = value ? VERDICT_STYLES[value] : null;
+          const Icon = style ? style.Icon : LayoutGrid;
+          const activeClass = style ? `${style.chip} ring-2` : "bg-ink text-white ring-ink";
           return (
             <button
               key={value || "all"}
+              type="button"
               onClick={() => updateParams("verdict", value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${
-                isActive ? activeColorClass : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              }`}
               aria-pressed={isActive}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold ring-1 ring-inset transition-colors ${
+                isActive ? activeClass : "bg-surface text-muted ring-line hover:text-ink hover:ring-line-strong"
+              }`}
             >
+              <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.25} />
               {label}
             </button>
           );
         })}
       </div>
-      <div className="flex-1 hidden sm:block" />
+
       <div className="flex items-center gap-2">
-        <label htmlFor="sort-select" className="text-gray-400 text-sm whitespace-nowrap">Sort by:</label>
+        <label htmlFor="sort-select" className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-muted">
+          <ArrowDownUp aria-hidden="true" className="h-4 w-4" />
+          Sort by
+        </label>
         <select
-          id="sort-select" value={currentSort}
+          id="sort-select"
+          value={currentSort}
           onChange={(e) => updateParams("sort", e.target.value)}
-          className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#0d1b4a]/20 cursor-pointer transition-all duration-200"
+          className="min-h-11 cursor-pointer rounded-xl border border-line bg-surface px-3 pr-8 text-sm font-semibold text-ink shadow-sm transition-[border-color,box-shadow] hover:border-line-strong focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
         >
           {SORT_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
         </select>
       </div>

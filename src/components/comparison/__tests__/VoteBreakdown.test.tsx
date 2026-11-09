@@ -35,7 +35,7 @@ describe("VoteBreakdown", () => {
     expect(screen.getByText("20%")).toBeInTheDocument();
   });
 
-  it("handles 0 votes by showing empty gray bar", () => {
+  it("handles 0 votes by showing empty tracks", () => {
     const { container } = render(
       <VoteBreakdown
         sameQuality={0}
@@ -44,10 +44,9 @@ describe("VoteBreakdown", () => {
         totalVotes={0}
       />
     );
-    // Bar background should be visible
-    const bar = container.querySelector(".rounded-full");
-    expect(bar).toBeInTheDocument();
-    expect(bar?.className).toContain("bg-gray-200");
+    // Three empty tracks, no filled bars
+    expect(container.querySelectorAll(".bg-paper-deep")).toHaveLength(3);
+    expect(container.querySelector(".animate-bar")).not.toBeInTheDocument();
     // All percentages are 0%
     const zeros = screen.getAllByText("0%");
     expect(zeros.length).toBeGreaterThanOrEqual(3);
@@ -66,8 +65,8 @@ describe("VoteBreakdown", () => {
     ).not.toThrow();
   });
 
-  it("renders stacked bar with colored segments for non-zero votes", () => {
-    const { container } = render(
+  it("renders one labelled bar per option, sized by its share", () => {
+    render(
       <VoteBreakdown
         sameQuality={5}
         closeEnough={3}
@@ -75,11 +74,12 @@ describe("VoteBreakdown", () => {
         totalVotes={10}
       />
     );
-    const emeraldSegment = container.querySelector(".bg-emerald-500");
-    const amberSegment = container.querySelector(".bg-amber-500");
-    const redSegment = container.querySelector(".bg-red-500");
-    expect(emeraldSegment).toBeInTheDocument();
-    expect(amberSegment).toBeInTheDocument();
-    expect(redSegment).toBeInTheDocument();
+    const bar = (key: string) => screen.getByTestId(`breakdown-${key}`).querySelector<HTMLElement>(".animate-bar");
+    expect(bar("SAME_QUALITY")).toHaveClass("bg-good");
+    expect(bar("SAME_QUALITY")?.style.width).toBe("50%");
+    expect(bar("CLOSE_ENOUGH")).toHaveClass("bg-close");
+    expect(bar("CLOSE_ENOUGH")?.style.width).toBe("30%");
+    expect(bar("NOT_WORTH_IT")).toHaveClass("bg-bad");
+    expect(bar("NOT_WORTH_IT")?.style.width).toBe("20%");
   });
 });

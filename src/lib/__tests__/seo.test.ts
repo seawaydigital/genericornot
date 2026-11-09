@@ -67,10 +67,10 @@ describe("getComparisonMetadata", () => {
     expect(og?.url).toContain("kirkland-ibuprofen-vs-advil");
   });
 
-  it("sets twitter card to summary", () => {
+  it("uses the large twitter card (comparison pages have OG images)", () => {
     const meta = getComparisonMetadata(baseComparison);
     const twitter = meta.twitter as Record<string, unknown>;
-    expect(twitter?.card).toBe("summary");
+    expect(twitter?.card).toBe("summary_large_image");
   });
 
   it("handles CLOSE_ENOUGH verdict in description", () => {
@@ -129,69 +129,50 @@ describe("getCategoryMetadata", () => {
 });
 
 describe("getComparisonJsonLd", () => {
-  it("returns correct @context and @type", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
+  it("describes a WebPage about the two products", () => {
+    const jsonLd = getComparisonJsonLd(baseComparison);
     expect(jsonLd["@context"]).toBe("https://schema.org");
-    expect(jsonLd["@type"]).toBe("Product");
-  });
-
-  it("includes product name", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    expect(jsonLd.name).toBe("Advil");
+    expect(jsonLd["@type"]).toBe("WebPage");
+    expect(jsonLd.inLanguage).toBe("en-CA");
+    const about = jsonLd.about as Array<Record<string, unknown>>;
+    expect(about.map((p) => p.name)).toEqual(["Advil", "Ibuprofen"]);
+    expect(about[0].brand).toEqual({ "@type": "Brand", name: "Pfizer" });
+    expect(about[1].brand).toEqual({ "@type": "Brand", name: "Kirkland" });
   });
 
   it("includes the comparison URL", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    expect(jsonLd.url).toContain("kirkland-ibuprofen-vs-advil");
+    const jsonLd = getComparisonJsonLd(baseComparison);
+    expect(jsonLd.url).toBe("https://genericornot.com/compare/kirkland-ibuprofen-vs-advil");
   });
 
-  it("includes category when present", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    expect(jsonLd.category).toBe("Health & Medicine");
+  it("includes the category on each product when present", () => {
+    const jsonLd = getComparisonJsonLd(baseComparison);
+    const about = jsonLd.about as Array<Record<string, unknown>>;
+    expect(about[0].category).toBe("Health & Medicine");
   });
 
-  it("includes offers when prices are provided", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    const offers = jsonLd.offers as object[];
-    expect(offers).toHaveLength(2);
+  it("never marks verdicts up as star ratings or prices as live offers", () => {
+    const jsonLd = getComparisonJsonLd(baseComparison);
+    const serialised = JSON.stringify(jsonLd);
+    expect(serialised).not.toContain("AggregateRating");
+    expect(serialised).not.toContain("Offer");
+    expect(serialised).not.toContain("USD");
   });
 
-  it("omits offers when no prices provided", () => {
-    const noPrice = { ...baseComparison, genericPrice: null, nameBrandPrice: null };
-    const jsonLd = getComparisonJsonLd(noPrice) as Record<string, unknown>;
-    const offers = jsonLd.offers as object[];
-    expect(offers).toHaveLength(0);
+  it("includes a breadcrumb trail", () => {
+    const jsonLd = getComparisonJsonLd(baseComparison);
+    const crumbs = (jsonLd.breadcrumb as { itemListElement: Array<{ name: string; position: number }> }).itemListElement;
+    expect(crumbs.map((c) => c.name)).toEqual(["Home", "Health & Medicine", "Kirkland vs Pfizer"]);
+    expect(crumbs.map((c) => c.position)).toEqual([1, 2, 3]);
   });
 
-  it("includes aggregateRating when enough votes", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    const rating = jsonLd.aggregateRating as Record<string, unknown>;
-    expect(rating).toBeDefined();
-    expect(rating["@type"]).toBe("AggregateRating");
-    expect(rating.ratingCount).toBe(50);
-  });
-
-  it("omits aggregateRating when fewer than 5 votes", () => {
-    const fewVotes = { ...baseComparison, totalVotes: 4 };
-    const jsonLd = getComparisonJsonLd(fewVotes) as Record<string, unknown>;
-    expect(jsonLd.aggregateRating).toBeUndefined();
-  });
-
-  it("maps SAME_QUALITY to rating 5", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
-    const rating = jsonLd.aggregateRating as Record<string, unknown>;
-    expect(rating.ratingValue).toBe(5);
-  });
-
-  it("maps NOT_WORTH_IT to rating 2", () => {
-    const comparison = { ...baseComparison, verdict: "NOT_WORTH_IT" };
-    const jsonLd = getComparisonJsonLd(comparison) as Record<string, unknown>;
-    const rating = jsonLd.aggregateRating as Record<string, unknown>;
-    expect(rating.ratingValue).toBe(2);
-  });
-
-  it("includes verdict in description", () => {
-    const jsonLd = getComparisonJsonLd(baseComparison) as Record<string, unknown>;
+  it("includes the verdict in the description", () => {
+    const jsonLd = getComparisonJsonLd(baseComparison);
     expect(jsonLd.description).toContain("Same Quality");
+  });
+
+  it("labels a research verdict as research, not community", () => {
+    const jsonLd = getComparisonJsonLd({ ...baseComparison, verdict: "PENDING", totalVotes: 2, editorialVerdict: "SAME_QUALITY" });
+    expect(jsonLd.description).toContain("Research verdict: Same Quality");
   });
 });

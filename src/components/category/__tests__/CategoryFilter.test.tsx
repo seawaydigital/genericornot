@@ -19,9 +19,9 @@ describe("CategoryFilter", () => {
   it("renders all verdict filter buttons", () => {
     render(<CategoryFilter />);
     expect(screen.getByRole("button", { name: /^All$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /same quality/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /generic worth it/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /close enough/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /not worth it/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stick with brand/i })).toBeInTheDocument();
   });
 
   it("renders the sort dropdown", () => {
@@ -47,20 +47,20 @@ describe("CategoryFilter", () => {
   it("other verdict buttons are not active when no verdict is selected", () => {
     render(<CategoryFilter />);
     expect(
-      screen.getByRole("button", { name: /same quality/i })
+      screen.getByRole("button", { name: /generic worth it/i })
     ).toHaveAttribute("aria-pressed", "false");
     expect(
       screen.getByRole("button", { name: /close enough/i })
     ).toHaveAttribute("aria-pressed", "false");
     expect(
-      screen.getByRole("button", { name: /not worth it/i })
+      screen.getByRole("button", { name: /stick with brand/i })
     ).toHaveAttribute("aria-pressed", "false");
   });
 
   it("marks the correct verdict button as active when currentVerdict is set", () => {
     render(<CategoryFilter currentVerdict="SAME_QUALITY" />);
     expect(
-      screen.getByRole("button", { name: /same quality/i })
+      screen.getByRole("button", { name: /generic worth it/i })
     ).toHaveAttribute("aria-pressed", "true");
     expect(
       screen.getByRole("button", { name: /^All$/i })

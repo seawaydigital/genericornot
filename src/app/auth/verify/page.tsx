@@ -1,35 +1,45 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ArrowLeft, Clock, Inbox, MailCheck, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Check your email — GenericOrNot",
 };
 
+const TIPS = [
+  { Icon: Clock, text: "The link expires in 24 hours and works once." },
+  { Icon: Inbox, text: "Not there? Check your spam or junk folder." },
+  { Icon: ShieldCheck, text: "We never ask for a password — the link is all you need." },
+];
+
 export default function VerifyRequestPage() {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="max-w-sm w-full text-center space-y-6">
-        <div className="text-5xl opacity-40">&#9993;</div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-          Check your email
-        </h1>
-        <p className="text-gray-500 text-sm leading-relaxed">
-          A sign-in link has been sent to your email address. Click the link to complete sign in.
-        </p>
-        <div className="glass rounded-2xl p-4 text-left space-y-2">
-          <p className="text-gray-600 text-xs font-medium">Tips:</p>
-          <ul className="text-gray-500 text-xs space-y-1">
-            <li>&#8226; The link expires in 24 hours</li>
-            <li>&#8226; Check your spam/junk folder</li>
-            <li>&#8226; The email comes from noreply@genericornot.com</li>
+    <div className="bg-hero">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-md items-center px-4 py-12">
+        <div className="card w-full p-6 text-center shadow-lift sm:p-8">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-good-bg text-good ring-1 ring-good-line">
+            <MailCheck aria-hidden="true" className="h-7 w-7" />
+          </span>
+          <h1 className="mt-5 font-display text-4xl leading-none tracking-tight text-ink">Check your email</h1>
+          <p className="mt-3 text-[15px] leading-relaxed text-muted">
+            A sign-in link has been sent to your email address. Click the link to complete sign in.
+          </p>
+          <ul className="mt-6 space-y-3 rounded-2xl border border-line bg-surface-2 p-4 text-left">
+            {TIPS.map(({ Icon, text }) => (
+              <li key={text} className="flex items-start gap-2.5 text-sm leading-relaxed text-muted">
+                <Icon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                {text}
+              </li>
+            ))}
           </ul>
+          <Link
+            href="/auth/signin"
+            className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-brand-500 transition-colors hover:bg-brand-50"
+          >
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+            Back to sign in
+          </Link>
         </div>
-        <Link
-          href="/auth/signin"
-          className="inline-block text-sm text-[#0d1b4a] hover:text-[#1e3a7a] font-medium transition-colors"
-        >
-          &larr; Back to sign in
-        </Link>
       </div>
     </div>
   );

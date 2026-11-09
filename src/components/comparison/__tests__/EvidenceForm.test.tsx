@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EvidenceForm } from "../EvidenceForm";
+import { makeSession } from "@/test/fixtures";
 
 // Mock next-auth/react
 vi.mock("next-auth/react", () => ({
@@ -15,7 +16,7 @@ describe("EvidenceForm", () => {
     vi.resetAllMocks();
     // Default: authenticated
     mockUseSession.mockReturnValue({
-      data: { user: { id: "user-1", name: "Test User" }, expires: "2099-01-01" },
+      data: makeSession(),
       status: "authenticated",
       update: vi.fn(),
     });
@@ -31,11 +32,22 @@ describe("EvidenceForm", () => {
 
   it("renders type dropdown with all evidence type options", () => {
     render(<EvidenceForm comparisonId="cmp-1" />);
+    expect(screen.getByText("Personal experience")).toBeInTheDocument();
     expect(screen.getByText("Manufacturer Info")).toBeInTheDocument();
     expect(screen.getByText("Ingredient Comparison")).toBeInTheDocument();
-    expect(screen.getByText("Photo")).toBeInTheDocument();
+    expect(screen.getByText("Photo (link)")).toBeInTheDocument();
     expect(screen.getByText("Video Link")).toBeInTheDocument();
-    expect(screen.getByText("Other")).toBeInTheDocument();
+  });
+
+  it("defaults to personal experience rather than a manufacturer claim", () => {
+    render(<EvidenceForm comparisonId="cmp-1" />);
+    expect(screen.getByLabelText(/type/i)).toHaveValue("OTHER");
+  });
+
+  it("caps field lengths to match the server limits", () => {
+    render(<EvidenceForm comparisonId="cmp-1" />);
+    expect(screen.getByLabelText(/title/i)).toHaveAttribute("maxLength", "120");
+    expect(screen.getByLabelText(/content/i)).toHaveAttribute("maxLength", "2000");
   });
 
   it("shows sign-in message when not authenticated", () => {
@@ -106,7 +118,7 @@ describe("EvidenceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/evidence submitted/i)).toBeInTheDocument();
+      expect(screen.getByText(/appear once a moderator reviews it/i)).toBeInTheDocument();
     });
 
     vi.unstubAllGlobals();

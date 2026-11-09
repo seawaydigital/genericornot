@@ -53,14 +53,24 @@ describe("GenericStatusBadge", () => {
     expect(screen.queryByText(/Save/)).not.toBeInTheDocument();
   });
 
-  it("renders ✓ icon for SAME_QUALITY", () => {
-    render(<GenericStatusBadge verdict="SAME_QUALITY" savings={null} />);
-    expect(screen.getByText("✓")).toBeInTheDocument();
+  it("pairs every verdict with a decorative SVG icon, never colour alone", () => {
+    for (const verdict of ["SAME_QUALITY", "CLOSE_ENOUGH", "NOT_WORTH_IT", "MIXED", "PENDING"]) {
+      const { container, unmount } = render(<GenericStatusBadge verdict={verdict} savings={null} />);
+      const svg = container.querySelector("svg");
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+      expect(container.textContent).not.toMatch(/[✓✗]/);
+      unmount();
+    }
   });
 
-  it("renders ✗ icon for NOT_WORTH_IT", () => {
-    render(<GenericStatusBadge verdict="NOT_WORTH_IT" savings={null} />);
-    expect(screen.getByText("✗")).toBeInTheDocument();
+  it("uses the verdict colour tokens", () => {
+    const { container } = render(<GenericStatusBadge verdict="NOT_WORTH_IT" savings={null} />);
+    expect(container.querySelector(".text-bad")).toHaveTextContent("Stick with Brand");
+  });
+
+  it("labels research verdicts", () => {
+    render(<GenericStatusBadge verdict="SAME_QUALITY" savings={null} source="research" />);
+    expect(screen.getByText("Research")).toBeInTheDocument();
   });
 
   it("falls back to PENDING for unknown verdict", () => {

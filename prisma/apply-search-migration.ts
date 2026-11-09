@@ -17,8 +17,7 @@
  */
 
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { createPrismaClient } from "../src/lib/db";
 
 // Each step is a separate string — no semicolon splitting, no dollar-quote breakage.
 const steps: Array<{ name: string; sql: string }> = [
@@ -79,8 +78,7 @@ END $outer$`,
 ];
 
 async function main() {
-  const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = createPrismaClient();
 
   const host = process.env.DATABASE_URL?.match(/@([^/]+)\//)?.[1] ?? "unknown";
   console.log(`Applying full-text search migration to: ${host}\n`);
@@ -91,8 +89,9 @@ async function main() {
     try {
       await prisma.$executeRawUnsafe(step.sql);
       console.log("✓");
-    } catch (err: any) {
-      console.log(`✗  ${err?.meta?.message ?? err?.message ?? err}`);
+    } catch (err: unknown) {
+      const e = err as { meta?: { message?: string }; message?: string };
+      console.log(`✗  ${e?.meta?.message ?? e?.message ?? String(err)}`);
       failed++;
     }
   }

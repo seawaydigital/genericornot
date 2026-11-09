@@ -12,7 +12,7 @@ describe("Button", () => {
   it("applies primary variant classes by default", () => {
     render(<Button>Test</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("bg-gradient-to-b");
+    expect(btn.className).toContain("bg-brand");
   });
 
   it("applies secondary variant classes", () => {

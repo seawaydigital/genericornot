@@ -73,7 +73,7 @@ describe("generateUniqueSlug", () => {
 
   it("appends -2 on first collision", async () => {
     prismaMock.productComparison.findFirst
-      .mockResolvedValueOnce({ id: "existing" } as any) // base slug taken
+      .mockResolvedValueOnce({ id: "existing" } as never) // base slug taken
       .mockResolvedValueOnce(null); // -2 is free
 
     const slug = await generateUniqueSlug(
@@ -86,8 +86,8 @@ describe("generateUniqueSlug", () => {
 
   it("appends -3 on two collisions", async () => {
     prismaMock.productComparison.findFirst
-      .mockResolvedValueOnce({ id: "existing-1" } as any) // base taken
-      .mockResolvedValueOnce({ id: "existing-2" } as any) // -2 taken
+      .mockResolvedValueOnce({ id: "existing-1" } as never) // base taken
+      .mockResolvedValueOnce({ id: "existing-2" } as never) // -2 taken
       .mockResolvedValueOnce(null); // -3 is free
 
     const slug = await generateUniqueSlug(
